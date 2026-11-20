@@ -57,7 +57,7 @@ final class Notif {
         String text = e.optString("task") + (dl && end > System.currentTimeMillis() ? " · até às " + Msg.hm(end) : "");
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_REMIND)
                 .setSmallIcon(R.drawable.ic_stat)
-                .setColor(0xFFE2552B)
+                .setColor(0xFFFD726B)
                 .setContentTitle(Msg.title(kind))
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
@@ -91,7 +91,7 @@ final class Notif {
         nm.createNotificationChannel(ch);
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_LOUD)
                 .setSmallIcon(R.drawable.ic_stat)
-                .setColor(0xFFE2552B)
+                .setColor(0xFFFD726B)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
