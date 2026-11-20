@@ -1,5 +1,5 @@
 // Service worker: guarda a app para abrir sem rede e trata dos botões das notificações.
-const CACHE = 'relembra-me-v1';
+const CACHE = 'mamly-v1';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'parser.js', 'icon.svg', 'manifest.webmanifest'];
 
 self.addEventListener('install', (e) => {

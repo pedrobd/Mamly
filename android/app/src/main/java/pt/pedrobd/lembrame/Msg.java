@@ -27,10 +27,12 @@ final class Msg {
             case "final": case "deadline": case "once": case "snooze": key = kind; break;
             default: key = dl && end > now2 ? "regularDl" : "regular";
         }
-        String[] list = PHRASES.get(key);
+        boolean mom = s.optBoolean("momMode", false);
+        String[] list = (mom ? MOM : PHRASES).get(key);
         String out = list[RANDOM.nextInt(list.length)];
         if ("snooze".equals(kind) && dl && end > now2) out += " Tens até às {time}.";
-        out = out.replace("{who}", who)
+        out = out.replace("{name}", name.isEmpty() ? "meu amor" : name)
+                .replace("{who}", who)
                 .replace("{hey}", name.isEmpty() ? "Ei! " : "Ei, " + name + "! ")
                 .replace("{task}", softLower(task))
                 .replace("{Task}", task.isEmpty() ? task : Character.toUpperCase(task.charAt(0)) + task.substring(1))
@@ -51,6 +53,21 @@ final class Msg {
         PHRASES.put("deadline", new String[]{"{who}chegou a hora limite: {task}. Já conseguiste?", "{who}a hora chegou: {task}. Já está feito?"});
         PHRASES.put("once", new String[]{"{who}está na hora: {task}.", "{hey}Chegou a hora: {task}.", "{who}agora é a altura: {task}."});
         PHRASES.put("snooze", new String[]{"{who}voltei, como combinado: {task}.", "{who}outra vez eu: {task}."});
+    }
+
+    /** Modo mãe: as mesmas frases da versão web (MOM_PHRASES em app.js). */
+    private static final java.util.Map<String, String[]> MOM = new java.util.HashMap<>();
+    static {
+        MOM.put("regularDl", new String[]{
+                "{name}, não te esqueças: {task}. Ainda tens {left}, até às {time}.",
+                "Então, {name}? Já trataste disto? {Task}. Só tens até às {time}.",
+                "{name}, olha a hora: {task}. Faltam {left}, não deixes para a última, coração!"});
+        MOM.put("regular", new String[]{"{name}, não te esqueças: {task}.", "Já trataste disto, {name}? {Task}.",
+                "{name}, só para te lembrar: {task}. Faz isso agora, coração, que é rapidinho."});
+        MOM.put("final", new String[]{"{name}! Último aviso: {task}. Só faltam {left}, despacha-te!", "Vá lá, {name}, está quase na hora: {task}. Tens até às {time}."});
+        MOM.put("deadline", new String[]{"{name}, chegou a hora: {task}. Conseguiste, coração?", "Então, {name}? Era agora: {task}. Já está feito?"});
+        MOM.put("once", new String[]{"{name}, está na hora: {task}.", "Vá, {name}, agora é a altura: {task}.", "Coração, chegou a hora: {task}."});
+        MOM.put("snooze", new String[]{"Eu disse que voltava, {name}: {task}.", "{name}, é outra vez a mãe: {task}. Não te esqueças!"});
     }
 
     /** "Ir à InPost" → "ir à InPost", mas "IKEA" fica igual. */

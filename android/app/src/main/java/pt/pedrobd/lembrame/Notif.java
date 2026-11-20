@@ -42,7 +42,7 @@ final class Notif {
     static android.app.Notification speaking(Context c) {
         return new NotificationCompat.Builder(c, CH_SERVICE)
                 .setSmallIcon(R.drawable.ic_stat)
-                .setContentTitle("Relembra-me")
+                .setContentTitle("Mamly")
                 .setContentText("A falar um lembrete…")
                 .setContentIntent(openApp(c))
                 .setPriority(NotificationCompat.PRIORITY_LOW)

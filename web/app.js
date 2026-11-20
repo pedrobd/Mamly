@@ -13,7 +13,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, alarmVolume: true, nativeVoice: '' }, load(SKEY, {}));
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, alarmVolume: true, nativeVoice: '', momMode: false }, load(SKEY, {}));
 
   // ---------- horas em texto ----------
   const pad = (n) => String(n).padStart(2, '0');
@@ -248,6 +248,19 @@
     once:      ['{who}está na hora: {task}.', '{hey}Chegou a hora: {task}.', '{who}agora é a altura: {task}.'],
     snooze:    ['{who}voltei, como combinado: {task}.', '{who}outra vez eu: {task}.'],
   };
+  // Modo mãe: a voz fala como uma mãe carinhosa. {name} = o teu nome, ou "meu amor" (iguais às do Android, em Msg.java).
+  const MOM_PHRASES = {
+    regularDl: ['{name}, não te esqueças: {task}. Ainda tens {left}, até às {time}.',
+                'Então, {name}? Já trataste disto? {Task}. Só tens até às {time}.',
+                '{name}, olha a hora: {task}. Faltam {left}, não deixes para a última, coração!'],
+    regular:   ['{name}, não te esqueças: {task}.', 'Já trataste disto, {name}? {Task}.',
+                '{name}, só para te lembrar: {task}. Faz isso agora, coração, que é rapidinho.'],
+    final:     ['{name}! Último aviso: {task}. Só faltam {left}, despacha-te!', 'Vá lá, {name}, está quase na hora: {task}. Tens até às {time}.'],
+    deadline:  ['{name}, chegou a hora: {task}. Conseguiste, coração?', 'Então, {name}? Era agora: {task}. Já está feito?'],
+    once:      ['{name}, está na hora: {task}.', 'Vá, {name}, agora é a altura: {task}.', 'Coração, chegou a hora: {task}.'],
+    snooze:    ['Eu disse que voltava, {name}: {task}.', '{name}, é outra vez a mãe: {task}. Não te esqueças!'],
+  };
+  const momName = () => settings.name || 'meu amor';
   // "Ir à InPost" → "ir à InPost", mas "IKEA" fica "IKEA"
   const softLower = (t) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t;
   function rawMessage(r, kind) {
@@ -256,17 +269,24 @@
     const task = r.text.replace(/[.!]+$/, '');
     const dl = r.hasDeadline && r.end > now;
     const key = kind === 'regular' || !PHRASES[kind] ? (dl ? 'regularDl' : 'regular') : kind;
-    const list = PHRASES[key];
+    const list = (settings.momMode ? MOM_PHRASES : PHRASES)[key];
     let out = list[Math.floor(Math.random() * list.length)];
     if (kind === 'snooze' && dl) out += ' Tens até às {time}.';
     return out
+      .replace('{name}', momName())
       .replace('{who}', settings.name ? settings.name + ', ' : '')
       .replace('{hey}', settings.name ? 'Ei, ' + settings.name + '! ' : 'Ei! ')
       .replace('{task}', softLower(task)).replace('{Task}', cap(task))
       .replace(/\{time\}/g, r.end ? sayTime(r.end) : '')
       .replace('{left}', r.end ? sayDuration(r.end - now) : '');
   }
-  function confirmation(r) {
+  function confirmation(r) { return cap(rawConfirmation(r)); }
+  function rawConfirmation(r) {
+    const s0 = rawConfirmation0(r);
+    if (!settings.momMode) return s0;
+    return s0.replace(/^Combinado\./, pick(['Está bem, ' + momName() + '.', 'Claro, coração.', 'Deixa comigo, ' + momName() + '.']));
+  }
+  function rawConfirmation0(r) {
     const task = lowerFirst(r.text);
     const day = dayWord(r.once ? r.firstAt : r.firstAt);
     if (r.once) return 'Combinado. ' + cap(day + 'às ') + sayTime(r.firstAt) + ' lembro-te de: ' + task + '.';
@@ -372,7 +392,9 @@
     save(); render();
     if (current && current.r === r) hideAlert();
     closeNotif(r.id);
-    if (spoken) await speak(pick(['Boa! Está feito.', 'Muito bem, menos uma coisa.', 'Feito. Boa!']));
+    if (spoken) await speak(pick(settings.momMode
+      ? ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos uma coisa.']
+      : ['Boa! Está feito.', 'Muito bem, menos uma coisa.', 'Feito. Boa!']));
   }
   async function snooze(r, mins, spoken) {
     r.snoozeAt = Date.now() + mins * MIN;
@@ -381,7 +403,9 @@
     save(); render();
     if (current && current.r === r) hideAlert();
     closeNotif(r.id);
-    if (spoken) await speak('Está bem, lembro-te daqui a ' + sayDuration(mins * MIN) + '.');
+    if (spoken) await speak(settings.momMode
+      ? 'Está bem, mas daqui a ' + sayDuration(mins * MIN) + ' volto a lembrar, hein?'
+      : 'Está bem, lembro-te daqui a ' + sayDuration(mins * MIN) + '.');
     else toast('Volto a lembrar às ' + hm(r.snoozeAt));
   }
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -520,7 +544,7 @@
       $('mic').classList.remove('listening');
       $('micLabel').textContent = 'Toca e fala';
       const msg = e.message === 'not-allowed' || e.message === 'service-not-allowed'
-        ? (NATIVE ? 'Tens de autorizar o microfone: Definições do Android → Apps → Relembra-me → Permissões.' : 'Tens de dar autorização ao microfone (no cadeado ao lado do endereço).')
+        ? (NATIVE ? 'Tens de autorizar o microfone: Definições do Android → Apps → Mamly → Permissões.' : 'Tens de dar autorização ao microfone (no cadeado ao lado do endereço).')
         : e.message === 'network' ? 'O reconhecimento de voz precisa de internet.' : 'Não consegui ouvir. Tenta outra vez ou escreve.';
       $('transcript').textContent = msg;
     }
@@ -562,7 +586,7 @@
   function renderHeader(open, done) {
     const h = new Date().getHours();
     const hello = h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite';
-    $('greeting').textContent = hello + (settings.name ? ', ' + settings.name : '') + '.';
+    $('greeting').textContent = hello + (settings.name ? ', ' + settings.name : settings.momMode ? ', meu amor' : '') + (settings.momMode ? ' 💛' : '.');
     $('today').textContent = cap(new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', ''));
     document.querySelector('.list-head').hidden = open.length === 0;
     const n = open.length;
@@ -748,6 +772,7 @@
     $('sChime').checked = settings.chime;
     $('sListen').checked = settings.listenAfter;
     $('sAlarm').checked = settings.alarmVolume;
+    $('sMom').checked = !!settings.momMode;
     $('sListen').disabled = !CAN_LISTEN;
     fillVoiceSelect();
     $('appVersion').textContent = NATIVE && NATIVE.version ? 'versão ' + NATIVE.version() : 'versão web';
@@ -779,6 +804,7 @@
     settings.chime = $('sChime').checked;
     settings.listenAfter = $('sListen').checked;
     settings.alarmVolume = $('sAlarm').checked;
+    settings.momMode = $('sMom').checked;
     saveSettings();
   }
 
@@ -853,6 +879,11 @@
     if (e.target.id === 'sRate') $('sRateOut').textContent = parseFloat(e.target.value).toFixed(2) + '×';
   });
   $('settingsForm').addEventListener('change', readSettings);
+  $('sMom').addEventListener('change', () => {
+    readSettings(); unlock(); render();
+    if (settings.momMode) speak(message({ text: 'Ir à InPost', hasDeadline: true, end: Date.now() + 55 * MIN }, 'regular'));
+    else speak('Modo mãe desligado.');
+  });
   $('settingsDlg').addEventListener('close', readSettings);
   $('sTest').addEventListener('click', () => {
     readSettings(); unlock();
@@ -885,7 +916,7 @@
       });
       NATIVE.sync(JSON.stringify({
         events,
-        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '' },
+        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode },
       }));
     }, 200);
   }
@@ -976,7 +1007,7 @@
       readSettings();
       $('settingsDlg').close();
       const r = {
-        id: Math.random().toString(36).slice(2, 10), text: 'Isto é um teste do Relembra-me', interval: null,
+        id: Math.random().toString(36).slice(2, 10), text: 'Isto é um teste do Mamly', interval: null,
         firstAt: Date.now() + 60e3, end: null, once: true, hasDeadline: false, createdAt: Date.now(), lastAt: 0, done: false,
       };
       reminders.push(r); save(); render();

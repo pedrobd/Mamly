@@ -1,4 +1,4 @@
-name: App Android (Relembra-me)
+name: App Android (Mamly)
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: relembra-me-apk
+  group: mamly-apk
   cancel-in-progress: true
 
 jobs:
@@ -49,34 +49,34 @@ jobs:
 
       - name: Preparar ficheiro
         run: |
-          cp android/app/build/outputs/apk/release/app-release.apk Relembra-me.apk
+          cp android/app/build/outputs/apk/release/app-release.apk Mamly.apk
           rm -f android/app/release.keystore
-          echo "APK_SHA256=$(sha256sum Relembra-me.apk | cut -d' ' -f1)" >> "$GITHUB_ENV"
+          echo "APK_SHA256=$(sha256sum Mamly.apk | cut -d' ' -f1)" >> "$GITHUB_ENV"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Relembra-me-apk
-          path: Relembra-me.apk
+          name: Mamly-apk
+          path: Mamly.apk
 
       # Link fixo para descarregar no telemóvel:
-      # https://github.com/<dono>/<repo>/releases/download/relembra-me/Relembra-me.apk
+      # https://github.com/<dono>/<repo>/releases/download/mamly/Mamly.apk
       - name: Publicar para download
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Antes de substituir o ficheiro, guarda quantos downloads já teve (o contador do GitHub recomeça a zero)
-          old=$(gh release view relembra-me --json body,assets 2>/dev/null || echo '{}')
+          old=$(gh release view mamly --json body,assets 2>/dev/null || echo '{}')
           cur=$(echo "$old" | jq '[.assets[]?.downloadCount] | add // 0')
           carried=$(echo "$old" | jq -r '.body // ""' | grep -oP 'Downloads de versões anteriores: \K[0-9]+' || true)
           if [ -z "$carried" ] && [ -f .github/downloads-base.txt ]; then carried=$(tr -dc '0-9' < .github/downloads-base.txt); fi
           PREV_DOWNLOADS=$(( cur + ${carried:-0} ))
           echo "Downloads acumulados até agora: $PREV_DOWNLOADS"
-          gh release delete relembra-me --yes --cleanup-tag || true
-          gh release create relembra-me Relembra-me.apk \
+          gh release delete mamly --yes --cleanup-tag || true
+          gh release create mamly Mamly.apk \
             --target "$GITHUB_SHA" \
             --prerelease \
-            --title "Relembra-me (app Android)" \
-            --notes "Lembretes falados que tocam mesmo com o ecrã desligado. Descarrega Relembra-me.apk no telemóvel e instala.
+            --title "Mamly (app Android)" \
+            --notes "Lembretes falados que tocam mesmo com o ecrã desligado. Descarrega Mamly.apk no telemóvel e instala.
 
           Versão do commit ${GITHUB_SHA::7}.
 

@@ -1,8 +1,8 @@
-# Relembra-me — licença
+# Mamly — licença
 
 Copyright (c) 2026 pedrobd. Todos os direitos reservados.
 
-O código e os ficheiros da app **Relembra-me** (pastas `web/` e `android/` deste repositório) são
+O código e os ficheiros da app **Mamly** (pastas `web/` e `android/` deste repositório) são
 publicados apenas para consulta. Não é concedida nenhuma autorização para os copiar, modificar,
 distribuir, publicar noutras lojas de aplicações ou usar em produtos próprios, no todo ou em parte,
 sem autorização escrita do autor.
