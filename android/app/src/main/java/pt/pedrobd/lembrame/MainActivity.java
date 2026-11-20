@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
     Dictation dictation;
     private static final int REQ_MIC = 2;
     private String pendingListenMode = null;
+    private String pendingSharedLink = null;
     private boolean pageReady = false;
 
     @Override
@@ -84,6 +85,7 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(new WebChromeClient());
         web.addJavascriptInterface(new Bridge(this), "AndroidBridge");
         web.loadUrl(START);
+        captureSharedLink(getIntent());
 
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
@@ -95,6 +97,29 @@ public class MainActivity extends Activity {
             Store.log(this, "Voz da app: " + info);
             js("window.__native && __native.onVoiceReady && __native.onVoiceReady()");
         });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (captureSharedLink(intent) && pageReady) js("window.__native && __native.onSharedLink && __native.onSharedLink()");
+    }
+
+    /** Guarda o link de um lembrete partilhado (mamly://add#r=…) até a interface o ir buscar. */
+    private boolean captureSharedLink(Intent intent) {
+        if (intent == null || intent.getData() == null) return false;
+        Uri u = intent.getData();
+        if (!"mamly".equals(u.getScheme())) return false;
+        pendingSharedLink = u.toString();
+        Store.log(this, "Recebi um lembrete partilhado");
+        return true;
+    }
+
+    synchronized String takeSharedLink() {
+        String s = pendingSharedLink;
+        pendingSharedLink = null;
+        return s == null ? "" : s;
     }
 
     @Override

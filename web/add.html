@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Um lembrete para ti · Mamly</title>
+  <meta name="description" content="Alguém partilhou um lembrete contigo no Mamly.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#330A2A">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <style>
+    @font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+    @font-face { font-family: "Manrope"; src: url("fonts/manrope.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+    :root { --bg: #FCFBF6; --card: #fff; --ink: #330A2A; --ink-2: #5E3A55; --muted: #7D6476; --line: #EDE3E3; --coral: #FD726B; --sun: #FBD270; color-scheme: light; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #1A0D17; --card: #2D1828; --ink: #FCF3F0; --ink-2: #E2CDD8; --muted: #A9909F; --line: #42283A; color-scheme: dark; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 16px/1.5 "Manrope", system-ui, sans-serif;
+      display: grid; place-items: center; padding: 24px 16px calc(24px + env(safe-area-inset-bottom)); }
+    main { width: 100%; max-width: 420px; text-align: center; }
+    .logo { width: 88px; height: 88px; border-radius: 24px; box-shadow: 0 14px 34px -14px rgba(51,10,42,.4); }
+    h1 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 26px; line-height: 1.15; letter-spacing: -.02em; margin: 18px 0 14px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 18px; text-align: left; box-shadow: 0 10px 30px -18px rgba(51,10,42,.35); }
+    .task { margin: 0; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 700; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+    .when { margin: 6px 0 0; color: var(--ink-2); }
+    .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 54px; margin-top: 12px; border-radius: 999px;
+      font-weight: 800; font-size: 17px; text-decoration: none; border: 0; cursor: pointer; }
+    .primary { background: #330A2A; color: #FCFBF6; margin-top: 22px; }
+    @media (prefers-color-scheme: dark) { .primary { background: var(--coral); color: #330A2A; } }
+    .ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+    .note { color: var(--muted); font-size: 14px; margin: 16px 0 0; }
+    .err { color: var(--ink-2); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="logo" src="icon.svg" alt="Mamly">
+    <h1 id="title">Recebeste um lembrete</h1>
+    <div class="card" id="card" hidden>
+      <p class="task" id="task"></p>
+      <p class="when" id="when"></p>
+    </div>
+    <p class="err" id="err" hidden>Este link não está completo. Pede a quem to enviou para o partilhar outra vez.</p>
+
+    <div id="actions" hidden>
+      <a class="btn primary" id="open" href="#">Abrir no Mamly</a>
+      <p class="note" id="noAppNote" hidden>Parece que ainda não tens o Mamly. Instala-o e volta a tocar no link.</p>
+      <a class="btn ghost" id="install" href="https://github.com/pedrobd/mamly/releases/download/mamly/Mamly.apk">Instalar o Mamly (Android)</a>
+      <a class="btn ghost" id="web" href="./">Usar a versão web</a>
+      <p class="note">O lembrete vai dentro do próprio link: não passa por nenhum servidor.</p>
+    </div>
+  </main>
+  <script>
+    (function () {
+      var m = location.hash.match(/r=([A-Za-z0-9_-]+)/);
+      var d = null;
+      try { d = m && JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))); } catch (e) {}
+      if (!d || d.v !== 1 || !d.t) { document.getElementById('err').hidden = false; return; }
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      var hm = function (t) { var x = new Date(t); return pad(x.getHours()) + ':' + pad(x.getMinutes()); };
+      var day = function (t) {
+        var a = new Date(t); a.setHours(0, 0, 0, 0); var b = new Date(); b.setHours(0, 0, 0, 0);
+        var diff = Math.round((a - b) / 864e5);
+        return diff === 0 ? 'hoje' : diff === 1 ? 'amanhã' : a.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric' });
+      };
+      var every = function (min) {
+        if (min < 1) { var s = Math.round(min * 60); return 'De ' + s + ' em ' + s + ' segundos'; }
+        if (min === 60) return 'De hora a hora'; if (min === 30) return 'De meia em meia hora';
+        if (min % 60 === 0) return 'De ' + (min / 60) + ' em ' + (min / 60) + ' horas';
+        return 'De ' + min + ' em ' + min + ' minutos';
+      };
+      document.title = (d.n ? d.n + ' quer lembrar-te' : 'Um lembrete para ti') + ' · Mamly';
+      document.getElementById('title').textContent = d.n ? d.n + ' quer lembrar-te de' : 'Recebeste um lembrete';
+      document.getElementById('task').textContent = String(d.t).slice(0, 200);
+      document.getElementById('when').textContent = d.o
+        ? (day(d.f).charAt(0).toUpperCase() + day(d.f).slice(1)) + ' às ' + hm(d.f)
+        : every(d.i || 60) + (d.e ? ' · até ' + (day(d.e) === 'hoje' ? '' : day(d.e) + ' ') + 'às ' + hm(d.e) : '');
+      document.getElementById('card').hidden = false;
+      document.getElementById('actions').hidden = false;
+
+      var payload = m[1];
+      var here = location.href.split('#')[0].split('?')[0];
+      var fallback = here + '?semapp=1#r=' + payload;
+      var android = /Android/i.test(navigator.userAgent);
+      document.getElementById('web').href = './#r=' + payload;
+      if (android) {
+        document.getElementById('open').href = 'intent://add?r=' + payload + '#Intent;scheme=mamly;package=pt.pedrobd.lembrame;S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
+      } else {
+        document.getElementById('open').hidden = true;
+        document.getElementById('install').textContent = 'Instalar o Mamly (só Android)';
+      }
+      if (/[?&]semapp=1/.test(location.search)) document.getElementById('noAppNote').hidden = false;
+    })();
+  </script>
+</body>
+</html>

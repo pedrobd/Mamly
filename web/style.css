@@ -370,6 +370,10 @@ button { cursor: pointer; }
 .dlg label.toggle input { margin: 2px 0 0; accent-color: var(--accent); width: 20px; height: 20px; flex: none; }
 .dlg label.toggle.mom { background: var(--accent-soft); }
 .dlg label.toggle.mom b { color: var(--accent); margin-right: 4px; }
+.share-card { background: var(--bg); border-radius: 18px; padding: 16px; border: 1px solid var(--line); }
+.share-task { margin: 0; font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
+.share-when { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
+.share-note { margin: 0; color: var(--muted); font-size: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .dlg-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 .spacer { flex: 1; }

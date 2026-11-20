@@ -13,6 +13,8 @@ e instala (o Android avisa que é de fontes desconhecidas porque não está na P
 
 - `web/` — a interface (HTML/CSS/JS). Também funciona como versão web, mas aí só toca com a página aberta.
 - `android/` — a app Android: abre a interface e junta-lhe alarmes do sistema, a voz do Android e o reconhecimento de voz.
+- `web/add.html` — página dos lembretes partilhados (`https://pedrobd.github.io/mamly/add.html#r=…`): mostra o lembrete e abre o Mamly.
+- `.github/workflows/pages.yml` — publica `web/` no GitHub Pages (versão web + página dos links).
 - `.github/workflows/android.yml` — compila o APK a cada alteração e publica-o na release `mamly`.
   A chave de assinatura está encriptada (`android/app/release.keystore.enc`); o GitHub Actions desencripta-a com o
   segredo `KEYSTORE_PASSWORD`.

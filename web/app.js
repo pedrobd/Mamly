@@ -975,6 +975,7 @@
       },
       onActions() { applyNativeActions(); },
       onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); },
+      onSharedLink() { checkIncomingLink(); },
       onVoiceReady() { updateNativeNotice(); if (settings.nativeVoice) NATIVE.setVoice(settings.nativeVoice); },
       // botão "voltar" do Android: fecha o que estiver aberto; devolve false se não havia nada para fechar
       onBack() { return closeTopLayer(); },
@@ -1015,6 +1016,90 @@
     });
   }
 
+  // ---------- partilhar lembretes por link ----------
+  // O lembrete vai dentro do próprio link, depois do "#": essa parte nunca é enviada a nenhum servidor.
+  const SHARE_BASE = 'https://pedrobd.github.io/mamly/add.html';
+  const b64url = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const unb64url = (str) => decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
+  function shareLink(r) {
+    const data = { v: 1, t: r.text, i: r.interval || 0, o: r.once ? 1 : 0, f: r.firstAt, e: r.end || 0, d: r.hasDeadline ? 1 : 0, n: settings.name || '' };
+    if (r.say) data.s = r.say;
+    return SHARE_BASE + '#r=' + b64url(JSON.stringify(data));
+  }
+  function decodeShare(str) {
+    try {
+      const m = String(str).match(/[#?&]r=([A-Za-z0-9_-]+)/) || [null, str];
+      const d = JSON.parse(unb64url(m[1]));
+      if (!d || d.v !== 1 || typeof d.t !== 'string' || !d.t.trim()) return null;
+      return {
+        text: d.t.slice(0, 200), interval: d.i > 0 ? Math.max(10 / 60, Math.min(+d.i, 720)) : null, once: !!d.o,
+        firstAt: +d.f || Date.now(), end: +d.e || null, hasDeadline: !!d.d, say: typeof d.s === 'string' ? d.s.slice(0, 200) : null,
+        from: typeof d.n === 'string' ? d.n.slice(0, 40) : '',
+      };
+    } catch (e) { return null; }
+  }
+  async function shareReminder(r) {
+    const url = shareLink(r);
+    const who = settings.name ? settings.name + ' quer' : 'Querem';
+    const text = who + ' lembrar-te de: ' + r.text + ' (' + lowerFirst(describe(r)) + '). Toca para adicionar ao Mamly 💛 ' + url;
+    nativeLog('Partilhar lembrete');
+    if (NATIVE && NATIVE.share) { NATIVE.share(text); return; }
+    if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+    try { await navigator.clipboard.writeText(text); toast('Link copiado. Cola-o no WhatsApp ou numa mensagem.'); }
+    catch (e) { prompt('Copia este link e envia-o:', url); }
+  }
+
+  let incoming = null;
+  function showIncoming(sh) {
+    if (!sh) return;
+    const now = Date.now();
+    // se o primeiro aviso já passou, avança para o próximo (ou avisa, se era só uma vez)
+    let expired = false;
+    if (!sh.once && sh.interval) {
+      const step = sh.interval * MIN;
+      while (sh.firstAt <= now) sh.firstAt += step;
+      if (sh.end && sh.firstAt >= sh.end && !sh.hasDeadline) expired = true;
+      if (sh.hasDeadline && sh.end && sh.end <= now) expired = true;
+    } else if (sh.once && sh.firstAt <= now) expired = true;
+    incoming = sh;
+    $('shareTitle').textContent = sh.from ? sh.from + ' quer lembrar-te de' : 'Recebeste um lembrete';
+    $('shareTask').textContent = sh.text;
+    $('shareWhen').textContent = describe(Object.assign({}, sh, { interval: sh.interval || 60 }));
+    $('shareNote').textContent = expired
+      ? 'Atenção: a hora deste lembrete já passou. Se aceitares, podes ajustá-la a seguir.'
+      : 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.';
+    if (!$('shareDlg').open) $('shareDlg').showModal();
+  }
+  $('shareYes').addEventListener('click', async () => {
+    const sh = incoming; incoming = null; $('shareDlg').close();
+    if (!sh) return;
+    const r = {
+      id: Math.random().toString(36).slice(2, 10), text: sh.text, interval: sh.once ? null : (sh.interval || 60),
+      firstAt: sh.firstAt, end: sh.once ? null : sh.end, once: sh.once, hasDeadline: sh.hasDeadline,
+      createdAt: Date.now(), lastAt: 0, done: false, say: sh.say, sharedBy: sh.from || '',
+    };
+    if (r.once && r.firstAt <= Date.now()) r.firstAt = Date.now() + 5 * MIN;
+    reminders.push(r); save(); render();
+    unlock();
+    await speak((settings.momMode ? 'Está bem, ' + momName() + '. ' : 'Combinado. ') + (sh.from ? sh.from + ' pediu-me para te lembrar: ' : 'Vou lembrar-te: ') + lowerFirst(sh.text) + '.');
+    if (r.once && sh.firstAt <= Date.now()) openEdit(r);
+  });
+  $('shareNo').addEventListener('click', () => { incoming = null; $('shareDlg').close(); });
+  $('eShare').addEventListener('click', () => { if (editing) shareReminder(editing); });
+  // links recebidos: na versão web chegam no endereço (#r=…); na app Android, através do NATIVE
+  function checkIncomingLink() {
+    if (/[#&]r=/.test(location.hash)) {
+      const sh = decodeShare(location.hash);
+      history.replaceState(null, '', location.pathname + location.search);
+      if (sh) showIncoming(sh); else toast('Este link de lembrete não está completo.');
+    }
+    if (NATIVE && NATIVE.takeSharedLink) {
+      const link = NATIVE.takeSharedLink();
+      if (link) { const sh = decodeShare(link); if (sh) showIncoming(sh); else toast('Este link de lembrete não está completo.'); }
+    }
+  }
+  window.addEventListener('hashchange', checkIncomingLink);
+
   // ---------- arranque ----------
   if ('speechSynthesis' in window) {
     loadVoices();
@@ -1044,6 +1129,7 @@
   setInterval(tick, 1000);
   tick();
   syncNative();
+  checkIncomingLink();
 
-  window.__lembretes = { handleInput, get reminders() { return reminders; }, plan, message, confirmation, tick };
+  window.__lembretes = { shareLink, decodeShare, handleInput, get reminders() { return reminders; }, plan, message, confirmation, tick };
 })();

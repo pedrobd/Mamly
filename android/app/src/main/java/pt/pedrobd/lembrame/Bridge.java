@@ -70,6 +70,18 @@ public class Bridge {
         catch (Exception e) { return "?"; }
     }
 
+    /** Abre o menu de partilha do Android (WhatsApp, SMS, …) com o texto e o link do lembrete. */
+    @JavascriptInterface
+    public void share(String text) {
+        a.runOnUiThread(() -> {
+            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
+            a.startActivity(Intent.createChooser(send, "Partilhar lembrete"));
+        });
+    }
+
+    @JavascriptInterface
+    public String takeSharedLink() { return a.takeSharedLink(); }
+
     @JavascriptInterface
     public void testNow() { Scheduler.scheduleTest(a); }
 
