@@ -70,24 +70,43 @@
         <li><b>Internet</b>: used only by Android's speech services and to open links.</li>
       </ul>
 
-      <h2>7. Children</h2>
+      <h2>7. Website statistics</h2>
+      <p>The mamly.app website (not the app) uses <a href="https://www.goatcounter.com/">GoatCounter</a> to count visits and button clicks, in aggregate. It uses no cookies, doesn't store your IP address and doesn't follow you across other sites. The content of shared reminders (the part of the link after “#”) is never sent.</p>
+
+      <h2>8. Children</h2>
       <p>Mamly is intended for adults and does not knowingly collect data from children.</p>
 
-      <h2>8. Your rights</h2>
+      <h2>9. Your rights</h2>
       <p>Because your data stays on your phone, you're in full control: you can edit or delete it in the app, or delete everything by uninstalling it. We don't have a copy of your reminders, so we can't view, correct or recover them.</p>
 
-      <h2>9. Changes</h2>
+      <h2>10. Changes</h2>
       <p>If this policy changes, the new version will be published on this page, with the update date.</p>
     </section>
   </main>
   <footer class="footer">
-    <p>© 2026 Mamly</p>
-    <p><a href="./">Home</a> · <a href="mailto:hello@mamly.app">hello@mamly.app</a> · <a href="../privacidade.html" data-lang="pt" hreflang="pt" lang="pt">Português</a> · <a class="ig-link" href="https://www.instagram.com/mamly.app/" rel="me"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>Instagram</a> · <a href="https://github.com/pedrobd/mamly">GitHub</a></p>
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a class="footer-logo" href="./"><img src="../app/icon.svg" alt="" width="40" height="40"><b>mamly</b></a>
+        <p>The mom who reminds you of everything. Out loud.</p>
+      </div>
+      <nav class="footer-col" aria-label="Mamly">
+        <h3>Mamly</h3>
+        <a href="./#how">How it works</a>
+        <a href="./#faq">FAQ</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="../app/" data-goatcounter-click="footer-web-app">Web version</a>
+      </nav>
+      <div class="footer-col">
+        <h3>Contact</h3>
+        <a class="footer-ic" href="https://www.instagram.com/mamly.app/" rel="me" data-goatcounter-click="instagram-footer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>@mamly.app</a>
+        <a class="footer-ic" href="mailto:hello@mamly.app" data-goatcounter-click="email-footer"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/></svg>hello@mamly.app</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Mamly · Made in Portugal 💛</p>
+      <a class="footer-lang" href="../" data-lang="pt" hreflang="pt" lang="pt">🇵🇹 Português</a>
+    </div>
   </footer>
-  <script>
-    document.querySelectorAll('[data-lang]').forEach(function (a) {
-      a.addEventListener('click', function () { try { localStorage.setItem('mamly.site.lang', a.dataset.lang); } catch (e) {} });
-    });
-  </script>
+  <script src="../config.js"></script>
 </body>
 </html>

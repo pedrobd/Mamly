@@ -30,6 +30,7 @@
     .note { color: var(--muted); font-size: 14px; margin: 16px 0 0; }
     .err { color: var(--ink-2); }
     [hidden] { display: none !important; }
+    .btn[aria-disabled="true"] { opacity: .55; cursor: default; }
   </style>
 </head>
 <body>
@@ -45,11 +46,12 @@
     <div id="actions" hidden>
       <a class="btn primary" id="open" href="#">Abrir no Mamly</a>
       <p class="note" id="noAppNote" hidden>Parece que ainda não tens o Mamly. Instala-o e volta a tocar no link.</p>
-      <a class="btn ghost" id="install" href="https://github.com/pedrobd/mamly/releases/download/mamly/Mamly.apk">Instalar o Mamly (Android)</a>
+      <a class="btn ghost" id="install" data-play href="#" aria-disabled="true" data-goatcounter-click="play-partilha">Em breve no Google Play</a>
       <a class="btn ghost" id="web" href="app/">Usar a versão web</a>
       <p class="note">O lembrete vai dentro do próprio link: não passa por nenhum servidor.</p>
     </div>
   </main>
+  <script src="config.js"></script>
   <script>
     (function () {
       // língua: português se o telemóvel estiver em português, inglês nos outros
@@ -57,7 +59,7 @@
       var L = function (pt, en) { return EN ? en : pt; };
       if (EN) {
         document.documentElement.lang = 'en';
-        var tx = { open: 'Open in Mamly', install: 'Install Mamly (Android)', web: 'Use the web version' };
+        var tx = { open: 'Open in Mamly', install: 'Coming soon on Google Play', web: 'Use the web version' };
         Object.keys(tx).forEach(function (id) { document.getElementById(id).textContent = tx[id]; });
         document.getElementById('noAppNote').textContent = "Looks like you don't have Mamly yet. Install it and tap the link again.";
         document.getElementById('err').textContent = 'This link is incomplete. Ask the person who sent it to share it again.';
@@ -105,8 +107,9 @@
         document.getElementById('open').href = 'intent://add?r=' + payload + '#Intent;scheme=mamly;package=pt.pedrobd.lembrame;S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
       } else {
         document.getElementById('open').hidden = true;
-        document.getElementById('install').textContent = L('Instalar o Mamly (só Android)', 'Install Mamly (Android only)');
       }
+      if (window.MAMLY && MAMLY.playUrl) document.getElementById('install').textContent = L('Instalar o Mamly no Google Play', 'Get Mamly on Google Play');
+      else document.getElementById('noAppNote').textContent = L('O Mamly chega em breve ao Google Play. Entretanto, podes usar a versão web.', 'Mamly is coming to Google Play soon. Meanwhile, you can use the web version.');
       if (/[?&]semapp=1/.test(location.search)) document.getElementById('noAppNote').hidden = false;
     })();
   </script>
