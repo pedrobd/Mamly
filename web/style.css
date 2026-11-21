@@ -386,6 +386,17 @@ button { cursor: pointer; }
 .share-when { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
 .share-note { margin: 0; color: var(--muted); font-size: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.social-row {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; text-decoration: none;
+  background: var(--bg-2); border: 1px solid var(--line); color: var(--ink);
+}
+.social-ic {
+  width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 13px; color: #fff;
+  background: linear-gradient(45deg, #F9A23B 0%, #E1306C 50%, #833AB4 100%);
+}
+.social-txt { display: grid; gap: 1px; font-size: 15px; line-height: 1.3; }
+.social-txt span { color: var(--muted); font-size: 14px; }
+.social-go { margin-left: auto; font-size: 26px; color: var(--muted); line-height: 1; }
 .dlg-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 4px; }
 .spacer { flex: 1; }
 
