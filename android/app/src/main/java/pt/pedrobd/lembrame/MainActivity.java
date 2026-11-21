@@ -122,6 +122,11 @@ public class MainActivity extends Activity {
         return s == null ? "" : s;
     }
 
+    /** Se a língua mudou (definições), volta a criar a voz da interface na língua nova. */
+    void ensureSpeechLang() {
+        if (speech != null && speech.isEnglish() != Lang.en(this)) { speech.shutdown(); speech = newSpeech(); }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -151,6 +156,7 @@ public class MainActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
             return;
         }
+        dictation.setLanguage(Lang.speechTag(this));
         if ("answer".equals(mode)) dictation.start(false, 7000);
         else dictation.start(true, 0);
     }
@@ -197,9 +203,10 @@ public class MainActivity extends Activity {
     void startListening() {
         Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-PT");
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "pt-PT");
-        i.putExtra(RecognizerIntent.EXTRA_PROMPT, "Diz o que tens de fazer");
+        String tag = Lang.speechTag(this);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, tag);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, tag);
+        i.putExtra(RecognizerIntent.EXTRA_PROMPT, Lang.t(this, "Diz o que tens de fazer", "Say what you need to do"));
         i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         try {
             startActivityForResult(i, REQ_SPEECH);

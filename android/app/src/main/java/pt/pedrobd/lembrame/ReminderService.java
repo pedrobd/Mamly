@@ -51,11 +51,11 @@ public class ReminderService extends Service {
     static void fallback(Context c, boolean test) {
         Notif.channels(c);
         if (test) {
-            Notif.loud(c, "teste", "Lembrete de teste", "A voz falhou, mas a notificação funciona.");
+            Notif.loud(c, "teste", Lang.t(c, "Lembrete de teste", "Test reminder"), Lang.t(c, "A voz falhou, mas a notificação funciona.", "The voice failed, but notifications work."));
             return;
         }
         for (JSONObject e : takeDue(c)) {
-            Notif.loud(c, e.optString("rid"), Msg.title(e.optString("kind")), e.optString("task"));
+            Notif.loud(c, e.optString("rid"), Msg.title(e.optString("kind"), Lang.en(c)), e.optString("task"));
         }
         Scheduler.scheduleNext(c);
     }
@@ -76,7 +76,7 @@ public class ReminderService extends Service {
         List<JSONObject> due;
         if (test) {
             due = new ArrayList<>();
-            due.add(new JSONObject().put("rid", "teste").put("kind", "once").put("task", "isto é um teste. Se ouves isto com o ecrã desligado, está tudo a funcionar"));
+            due.add(new JSONObject().put("rid", "teste").put("kind", "once").put("task", Lang.t(this, "isto é um teste. Se ouves isto com o ecrã desligado, está tudo a funcionar", "this is a test. If you can hear this with the screen off, everything is working")));
         } else {
             due = takeDue(this);
             Scheduler.scheduleNext(this);

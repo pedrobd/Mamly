@@ -57,7 +57,7 @@ public class Bridge {
             JSONArray ev = o.optJSONArray("events");
             Store.setEvents(a, ev != null ? ev : new JSONArray());
             JSONObject s = o.optJSONObject("settings");
-            if (s != null) Store.setSettings(a, s);
+            if (s != null) { Store.setSettings(a, s); a.runOnUiThread(a::ensureSpeechLang); }
         } catch (JSONException e) {
             Store.log(a, "Erro a receber avisos: " + e.getMessage());
         }
@@ -75,7 +75,7 @@ public class Bridge {
     public void share(String text) {
         a.runOnUiThread(() -> {
             Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text);
-            a.startActivity(Intent.createChooser(send, "Partilhar lembrete"));
+            a.startActivity(Intent.createChooser(send, Lang.t(a, "Partilhar lembrete", "Share reminder")));
         });
     }
 

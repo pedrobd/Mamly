@@ -11,7 +11,8 @@ e instala (o Android avisa que é de fontes desconhecidas porque não está na P
 
 ## Estrutura
 
-- `web/` — a interface (HTML/CSS/JS). Também funciona como versão web, mas aí só toca com a página aberta.
+- `web/` — a interface (HTML/CSS/JS). Segue a língua do telemóvel: português (`parser.js`) ou inglês (`parser-en.js`);
+  pode escolher-se nas definições. Também funciona como versão web, mas aí só toca com a página aberta.
 - `android/` — a app Android: abre a interface e junta-lhe alarmes do sistema, a voz do Android e o reconhecimento de voz.
 - `site/` — o site público (landing page, `privacidade.html`, `add.html` dos lembretes partilhados, `downloads.html`).
 - `.github/workflows/pages.yml` — publica o site no GitHub Pages: `site/` na raiz e `web/` em `/app/`

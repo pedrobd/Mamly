@@ -229,6 +229,13 @@
       <label>O teu nome (a voz chama-te pelo nome)
         <input id="sName" type="text" placeholder="opcional">
       </label>
+      <label>Língua
+        <select id="sLang">
+          <option value="auto">Automática (a do telemóvel)</option>
+          <option value="pt">Português</option>
+          <option value="en">English</option>
+        </select>
+      </label>
       <label id="voiceWrap">Voz (escolhe e ouve como soa)
         <select id="sVoice"></select>
       </label>
@@ -277,6 +284,7 @@
   </dialog>
 
   <script src="parser.js"></script>
+  <script src="parser-en.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -20,14 +20,15 @@ final class Notif {
 
     static void channels(Context c) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
-        NotificationChannel remind = new NotificationChannel(CH_REMIND, "Lembretes", NotificationManager.IMPORTANCE_HIGH);
-        remind.setDescription("O aviso com os botões Feito e Adiar");
+        boolean en = Lang.en(c);
+        NotificationChannel remind = new NotificationChannel(CH_REMIND, en ? "Reminders" : "Lembretes", NotificationManager.IMPORTANCE_HIGH);
+        remind.setDescription(en ? "The reminder with Done and Snooze buttons" : "O aviso com os botões Feito e Adiar");
         remind.setSound(null, null); // o som é a voz
         remind.enableVibration(true);
         remind.setVibrationPattern(new long[]{0, 300, 200, 300});
         nm.createNotificationChannel(remind);
-        NotificationChannel svc = new NotificationChannel(CH_SERVICE, "A falar", NotificationManager.IMPORTANCE_LOW);
-        svc.setDescription("Aparece enquanto a voz está a falar");
+        NotificationChannel svc = new NotificationChannel(CH_SERVICE, en ? "Speaking" : "A falar", NotificationManager.IMPORTANCE_LOW);
+        svc.setDescription(en ? "Shown while the voice is speaking" : "Aparece enquanto a voz está a falar");
         svc.setSound(null, null);
         nm.createNotificationChannel(svc);
     }
@@ -43,7 +44,7 @@ final class Notif {
         return new NotificationCompat.Builder(c, CH_SERVICE)
                 .setSmallIcon(R.drawable.ic_stat)
                 .setContentTitle("Mamly")
-                .setContentText("A falar um lembrete…")
+                .setContentText(Lang.t(c, "A falar um lembrete…", "Speaking a reminder…"))
                 .setContentIntent(openApp(c))
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .build();
@@ -54,11 +55,12 @@ final class Notif {
         String kind = e.optString("kind", "regular");
         long end = e.optLong("end", 0);
         boolean dl = e.optBoolean("hasDeadline", false) && end > 0;
-        String text = e.optString("task") + (dl && end > System.currentTimeMillis() ? " · até às " + Msg.hm(end) : "");
+        boolean en = Lang.en(c);
+        String text = e.optString("task") + (dl && end > System.currentTimeMillis() ? (en ? " · until " : " · até às ") + Msg.hm(end) : "");
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_REMIND)
                 .setSmallIcon(R.drawable.ic_stat)
                 .setColor(0xFFFD726B)
-                .setContentTitle(Msg.title(kind))
+                .setContentTitle(Msg.title(kind, en))
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
@@ -66,7 +68,7 @@ final class Notif {
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setContentIntent(openApp(c))
                 .setAutoCancel(true)
-                .addAction(0, "Feito ✓", action(c, ActionReceiver.DONE, e, 10))
+                .addAction(0, en ? "Done ✓" : "Feito ✓", action(c, ActionReceiver.DONE, e, 10))
                 .addAction(0, "+10 min", action(c, ActionReceiver.SNOOZE, e, 10))
                 .addAction(0, "+30 min", action(c, ActionReceiver.SNOOZE, e, 30));
         try { NotificationManagerCompat.from(c).notify(idFor(rid), b.build()); }
@@ -86,8 +88,9 @@ final class Notif {
     /** Notificação com som (usada quando a voz falha). */
     static void loud(Context c, String rid, String title, String text) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
-        NotificationChannel ch = new NotificationChannel(CH_LOUD, "Lembretes (sem voz)", NotificationManager.IMPORTANCE_HIGH);
-        ch.setDescription("Usado se a voz não conseguir falar");
+        boolean en = Lang.en(c);
+        NotificationChannel ch = new NotificationChannel(CH_LOUD, en ? "Reminders (no voice)" : "Lembretes (sem voz)", NotificationManager.IMPORTANCE_HIGH);
+        ch.setDescription(en ? "Used if the voice can't speak" : "Usado se a voz não conseguir falar");
         nm.createNotificationChannel(ch);
         NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_LOUD)
                 .setSmallIcon(R.drawable.ic_stat)

@@ -28,6 +28,8 @@ final class Speech implements TextToSpeech.OnInitListener {
     private TextToSpeech tts;
     private final Context appContext;
     private final boolean alarmStream;
+    /** Língua desta voz, decidida ao criar: inglês ou português. */
+    private final boolean english;
     private String voiceName = "";
     private boolean ready = false, failed = false, noPortuguese = false, triedDefault = false;
     private final List<Runnable> waiting = new ArrayList<>();
@@ -43,6 +45,7 @@ final class Speech implements TextToSpeech.OnInitListener {
     Speech(Context c, boolean alarmStream) {
         appContext = c.getApplicationContext();
         this.alarmStream = alarmStream;
+        this.english = Lang.en(appContext);
         // Muitas marcas (Xiaomi, Oppo, Huawei…) trazem um motor de voz sem português.
         // Se o da Google estiver instalado, usamos esse; senão, o do sistema.
         if (googleInstalled(appContext)) create(GOOGLE_TTS);
@@ -62,7 +65,7 @@ final class Speech implements TextToSpeech.OnInitListener {
                 .build());
     }
 
-    /** Tenta o motor do sistema (quando o da Google falhou ou não tem português). */
+    /** Tenta o motor do sistema (quando o da Google falhou ou não tem a língua da app). */
     private boolean fallbackToDefault() {
         if (triedDefault) return false;
         triedDefault = true;
@@ -77,6 +80,14 @@ final class Speech implements TextToSpeech.OnInitListener {
         return l != null && ("pt".equals(l.getLanguage()) || "por".equals(safeIso3(l)));
     }
 
+    private static boolean isEn(Locale l) {
+        return l != null && ("en".equals(l.getLanguage()) || "eng".equals(safeIso3(l)));
+    }
+
+    private boolean isTarget(Locale l) { return english ? isEn(l) : isPt(l); }
+
+    boolean isEnglish() { return english; }
+
     private static String safeIso3(Locale l) {
         try { return l.getISO3Language(); } catch (Exception e) { return ""; }
     }
@@ -90,22 +101,33 @@ final class Speech implements TextToSpeech.OnInitListener {
             flushFailed();
             return;
         }
-        String lang = "português de Portugal";
-        int r = tts.setLanguage(new Locale("pt", "PT"));
-        if (!ok(r)) {
-            lang = "português do Brasil";
-            r = tts.setLanguage(new Locale("pt", "BR"));
+        String lang;
+        int r;
+        if (english) {
+            Locale d = Locale.getDefault();
+            Locale first = "en".equals(d.getLanguage()) ? d : Locale.US;
+            lang = "English (" + first.toLanguageTag() + ")";
+            r = tts.setLanguage(first);
+            if (!ok(r)) { lang = "English (US)"; r = tts.setLanguage(Locale.US); }
+            if (!ok(r)) { lang = "English (UK)"; r = tts.setLanguage(Locale.UK); }
+        } else {
+            lang = "português de Portugal";
+            r = tts.setLanguage(new Locale("pt", "PT"));
+            if (!ok(r)) {
+                lang = "português do Brasil";
+                r = tts.setLanguage(new Locale("pt", "BR"));
+            }
         }
         // alguns motores dizem que sim mas ficam com outra voz: confirmamos
         Voice current = null;
         try { current = tts.getVoice(); } catch (Exception ignored) {}
-        if (!ok(r) || (current != null && !isPt(current.getLocale()))) {
+        if (!ok(r) || (current != null && !isTarget(current.getLocale()))) {
             if (fallbackToDefault()) return;
-            // Sem voz portuguesa: não falamos com uma voz de outra língua (ex.: chinês).
+            // Sem voz na língua da app: não falamos com uma voz de outra língua (ex.: chinês).
             // O aviso continua a tocar o sinal e a mostrar a notificação.
             noPortuguese = true;
             failed = true;
-            if (onReady != null) onReady.run(false, "sem voz portuguesa instalada (motor: " + tts.getDefaultEngine() + ")");
+            if (onReady != null) onReady.run(false, (english ? "sem voz inglesa instalada" : "sem voz portuguesa instalada") + " (motor: " + tts.getDefaultEngine() + ")");
             flushFailed();
             return;
         }
@@ -194,17 +216,18 @@ final class Speech implements TextToSpeech.OnInitListener {
         } catch (Exception ignored) {}
     }
 
-    /** Vozes portuguesas disponíveis, para escolher nas definições. */
+    /** Vozes disponíveis na língua da app, para escolher nas definições. */
     synchronized String voicesJson() {
         JSONArray out = new JSONArray();
         if (!ready) return out.toString();
         try {
             for (Voice v : tts.getVoices()) {
-                if (!"por".equals(v.getLocale().getISO3Language()) && !"pt".equals(v.getLocale().getLanguage())) continue;
+                if (!isTarget(v.getLocale())) continue;
                 boolean notInstalled = v.getFeatures() != null && v.getFeatures().contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED);
                 out.put(new JSONObject()
                         .put("name", v.getName())
                         .put("country", v.getLocale().getCountry())
+                        .put("lang", v.getLocale().getLanguage())
                         .put("network", v.isNetworkConnectionRequired())
                         .put("quality", v.getQuality())
                         .put("installed", !notInstalled));

@@ -32,6 +32,10 @@ final class Dictation implements RecognitionListener {
     private final StringBuilder committed = new StringBuilder();
     private String partial = "";
     private boolean active = false, continuous = true;
+    private String langTag = "pt-PT";
+
+    /** Língua do reconhecimento: "pt-PT", "en-GB", "en-US"… */
+    void setLanguage(String tag) { if (tag != null && !tag.isEmpty()) langTag = tag; }
 
     Dictation(Context context, Out out) {
         this.context = context;
@@ -62,8 +66,8 @@ final class Dictation implements RecognitionListener {
         }
         Intent i = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "pt-PT");
-        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "pt-PT");
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE, langTag);
+        i.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, langTag);
         i.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         i.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         i.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());

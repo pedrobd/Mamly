@@ -52,6 +52,18 @@
   </main>
   <script>
     (function () {
+      // língua: português se o telemóvel estiver em português, inglês nos outros
+      var EN = !/^pt/i.test(navigator.language || 'pt');
+      var L = function (pt, en) { return EN ? en : pt; };
+      if (EN) {
+        document.documentElement.lang = 'en';
+        var tx = { open: 'Open in Mamly', install: 'Install Mamly (Android)', web: 'Use the web version' };
+        Object.keys(tx).forEach(function (id) { document.getElementById(id).textContent = tx[id]; });
+        document.getElementById('noAppNote').textContent = "Looks like you don't have Mamly yet. Install it and tap the link again.";
+        document.getElementById('err').textContent = 'This link is incomplete. Ask the person who sent it to share it again.';
+        document.querySelectorAll('.note')[1].textContent = "The reminder travels inside the link itself: it doesn't go through any server.";
+        document.getElementById('title').textContent = 'You got a reminder';
+      }
       var m = location.hash.match(/r=([A-Za-z0-9_-]+)/);
       var d = null;
       try { d = m && JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))); } catch (e) {}
@@ -61,20 +73,26 @@
       var day = function (t) {
         var a = new Date(t); a.setHours(0, 0, 0, 0); var b = new Date(); b.setHours(0, 0, 0, 0);
         var diff = Math.round((a - b) / 864e5);
-        return diff === 0 ? 'hoje' : diff === 1 ? 'amanhã' : a.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric' });
+        return diff === 0 ? L('hoje', 'today') : diff === 1 ? L('amanhã', 'tomorrow') : a.toLocaleDateString(L('pt-PT', 'en-GB'), { weekday: 'long', day: 'numeric' });
       };
       var every = function (min) {
+        if (EN) {
+          if (min < 1) return 'Every ' + Math.round(min * 60) + ' seconds';
+          if (min === 60) return 'Every hour'; if (min === 30) return 'Every half hour'; if (min === 1) return 'Every minute';
+          if (min % 60 === 0) return 'Every ' + (min / 60) + ' hours';
+          return 'Every ' + min + ' minutes';
+        }
         if (min < 1) { var s = Math.round(min * 60); return 'De ' + s + ' em ' + s + ' segundos'; }
         if (min === 60) return 'De hora a hora'; if (min === 30) return 'De meia em meia hora';
         if (min % 60 === 0) return 'De ' + (min / 60) + ' em ' + (min / 60) + ' horas';
         return 'De ' + min + ' em ' + min + ' minutos';
       };
-      document.title = (d.n ? d.n + ' quer lembrar-te' : 'Um lembrete para ti') + ' · Mamly';
-      document.getElementById('title').textContent = d.n ? d.n + ' quer lembrar-te de' : 'Recebeste um lembrete';
+      document.title = (d.n ? d.n + L(' quer lembrar-te', ' wants to remind you') : L('Um lembrete para ti', 'A reminder for you')) + ' · Mamly';
+      document.getElementById('title').textContent = d.n ? d.n + L(' quer lembrar-te de', ' wants to remind you') : L('Recebeste um lembrete', 'You got a reminder');
       document.getElementById('task').textContent = String(d.t).slice(0, 200);
       document.getElementById('when').textContent = d.o
-        ? (day(d.f).charAt(0).toUpperCase() + day(d.f).slice(1)) + ' às ' + hm(d.f)
-        : every(d.i || 60) + (d.e ? ' · até ' + (day(d.e) === 'hoje' ? '' : day(d.e) + ' ') + 'às ' + hm(d.e) : '');
+        ? (day(d.f).charAt(0).toUpperCase() + day(d.f).slice(1)) + L(' às ', ' at ') + hm(d.f)
+        : every(d.i || 60) + (d.e ? L(' · até ', ' · until ') + (day(d.e) === L('hoje', 'today') ? '' : day(d.e) + ' ') + L('às ', 'at ') + hm(d.e) : '');
       document.getElementById('card').hidden = false;
       document.getElementById('actions').hidden = false;
 
@@ -87,7 +105,7 @@
         document.getElementById('open').href = 'intent://add?r=' + payload + '#Intent;scheme=mamly;package=pt.pedrobd.lembrame;S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
       } else {
         document.getElementById('open').hidden = true;
-        document.getElementById('install').textContent = 'Instalar o Mamly (só Android)';
+        document.getElementById('install').textContent = L('Instalar o Mamly (só Android)', 'Install Mamly (Android only)');
       }
       if (/[?&]semapp=1/.test(location.search)) document.getElementById('noAppNote').hidden = false;
     })();

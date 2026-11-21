@@ -8,7 +8,16 @@ import java.util.Calendar;
 final class Msg {
     private Msg() {}
 
+    /** A língua vem das definições sincronizadas pela interface ("lang"); se faltar, a do telemóvel. */
+    static boolean isEn(JSONObject s) {
+        String l = s.optString("lang", "");
+        if ("en".equals(l)) return true;
+        if ("pt".equals(l)) return false;
+        return !"pt".equals(java.util.Locale.getDefault().getLanguage());
+    }
+
     static String build(JSONObject e, JSONObject s, long now) {
+        boolean en = isEn(s);
         String name = s.optString("name", "").trim();
         String who = name.isEmpty() ? "" : name + ", ";
         String task = e.optString("task", "Lembrete").replaceAll("[.!]+$", "");
@@ -28,16 +37,17 @@ final class Msg {
             default: key = dl && end > now2 ? "regularDl" : "regular";
         }
         boolean mom = s.optBoolean("momMode", false);
-        String[] list = (mom ? MOM : PHRASES).get(key);
+        String[] list = (en ? (mom ? MOM_EN : PHRASES_EN) : (mom ? MOM : PHRASES)).get(key);
         String out = list[RANDOM.nextInt(list.length)];
-        if ("snooze".equals(kind) && dl && end > now2) out += " Tens até às {time}.";
-        out = out.replace("{name}", name.isEmpty() ? "meu amor" : name)
+        if ("snooze".equals(kind) && dl && end > now2) out += en ? " You have until {time}." : " Tens até às {time}.";
+        out = out.replace("{name}", name.isEmpty() ? (en ? "sweetheart" : "meu amor") : name)
                 .replace("{who}", who)
-                .replace("{hey}", name.isEmpty() ? "Ei! " : "Ei, " + name + "! ")
+                .replace("{hey}", name.isEmpty() ? (en ? "Hey! " : "Ei! ") : (en ? "Hey, " : "Ei, ") + name + "! ")
                 .replace("{task}", softLower(task))
                 .replace("{Task}", task.isEmpty() ? task : Character.toUpperCase(task.charAt(0)) + task.substring(1))
-                .replace("{time}", end > 0 ? time(end) : "")
-                .replace("{left}", end > 0 ? duration(end - now2) : "");
+                .replace("{time}", end > 0 ? time(end, en) : "")
+                .replace("{Left}", end > 0 ? capFirst(duration(end - now2, en)) : "")
+                .replace("{left}", end > 0 ? duration(end - now2, en) : "");
         return out.isEmpty() ? out : Character.toUpperCase(out.charAt(0)) + out.substring(1);
     }
 
@@ -70,6 +80,33 @@ final class Msg {
         MOM.put("snooze", new String[]{"Eu disse que voltava, {name}: {task}.", "{name}, é outra vez a mãe: {task}. Não te esqueças!"});
     }
 
+    /** Frases em inglês (iguais às da versão web: PHRASES_EN / MOM_PHRASES_EN em app.js). */
+    private static final java.util.Map<String, String[]> PHRASES_EN = new java.util.HashMap<>();
+    private static final java.util.Map<String, String[]> MOM_EN = new java.util.HashMap<>();
+    static {
+        PHRASES_EN.put("regularDl", new String[]{
+                "{who}don't forget: {task}. You have until {time}, {left} left.",
+                "{who}just a reminder: {task}. {Left} left until {time}.",
+                "{hey}{Task}. You still have {left}, until {time}."});
+        PHRASES_EN.put("regular", new String[]{"{who}don't forget: {task}.", "{who}just a reminder: {task}.", "{hey}{Task}."});
+        PHRASES_EN.put("final", new String[]{"{who}last call! {Task}. Only {left} left.", "{who}heads up, it's almost time: {task}. You have until {time}."});
+        PHRASES_EN.put("deadline", new String[]{"{who}it's time: {task}. Did you manage?", "{who}time's up: {task}. Is it done?"});
+        PHRASES_EN.put("once", new String[]{"{who}it's time: {task}.", "{hey}It's time: {task}.", "{who}now is the moment: {task}."});
+        PHRASES_EN.put("snooze", new String[]{"{who}I'm back, as promised: {task}.", "{who}me again: {task}."});
+        MOM_EN.put("regularDl", new String[]{
+                "{name}, don't forget: {task}. You still have {left}, until {time}.",
+                "So, {name}? Have you done this yet? {Task}. You only have until {time}.",
+                "{name}, look at the time: {task}. {Left} left, don't leave it to the last minute, honey!"});
+        MOM_EN.put("regular", new String[]{"{name}, don't forget: {task}.", "Have you done this yet, {name}? {Task}.",
+                "{name}, just reminding you: {task}. Do it now, honey, it'll only take a minute."});
+        MOM_EN.put("final", new String[]{"{name}! Last call: {task}. Only {left} left, hurry up!", "Come on, {name}, it's almost time: {task}. You have until {time}."});
+        MOM_EN.put("deadline", new String[]{"{name}, it's time: {task}. Did you manage, honey?", "So, {name}? It was now: {task}. Is it done?"});
+        MOM_EN.put("once", new String[]{"{name}, it's time: {task}.", "Come on, {name}, now's the moment: {task}.", "Honey, it's time: {task}."});
+        MOM_EN.put("snooze", new String[]{"I said I'd be back, {name}: {task}.", "{name}, it's mom again: {task}. Don't forget!"});
+    }
+
+    private static String capFirst(String t) { return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1); }
+
     /** "Ir à InPost" → "ir à InPost", mas "IKEA" fica igual. */
     private static String softLower(String t) {
         if (t.length() > 1 && Character.isUpperCase(t.charAt(0)) && Character.isLowerCase(t.charAt(1)))
@@ -77,7 +114,16 @@ final class Msg {
         return t;
     }
 
-    static String title(String kind) {
+    static String title(String kind, boolean en) {
+        if (en) {
+            switch (kind) {
+                case "final": return "Last call";
+                case "deadline": return "Time's up";
+                case "once": return "It's time";
+                case "snooze": return "Again";
+                default: return "Reminder";
+            }
+        }
         switch (kind) {
             case "final": return "Último aviso";
             case "deadline": return "Hora limite";
@@ -87,10 +133,17 @@ final class Msg {
         }
     }
 
-    static String time(long t) {
+    static String time(long t, boolean en) {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(t);
         int h = c.get(Calendar.HOUR_OF_DAY), m = c.get(Calendar.MINUTE);
+        if (en) {
+            if (h == 12 && m == 0) return "noon";
+            if (h == 23 && m == 59) return "midnight";
+            int h12 = h % 12 == 0 ? 12 : h % 12;
+            String ap = h < 12 ? "AM" : "PM";
+            return m == 0 ? h12 + " " + ap : String.format(java.util.Locale.ROOT, "%d:%02d %s", h12, m, ap);
+        }
         if (h == 12 && m == 0) return "meio-dia";
         if (h == 23 && m == 59) return "meia-noite";
         if (m == 0) return h + (h == 1 ? " hora" : " horas");
@@ -104,16 +157,16 @@ final class Msg {
         return String.format(java.util.Locale.ROOT, "%02d:%02d", c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE));
     }
 
-    static String duration(long ms) {
+    static String duration(long ms, boolean en) {
         if (ms < 59500) {
             long sec = Math.max(1, Math.round(ms / 1000.0));
-            return sec + (sec == 1 ? " segundo" : " segundos");
+            return sec + (sec == 1 ? (en ? " second" : " segundo") : (en ? " seconds" : " segundos"));
         }
         long total = Math.max(1, Math.round(ms / 60000.0));
         long h = total / 60, m = total % 60;
-        String hs = h == 0 ? "" : h + (h == 1 ? " hora" : " horas");
-        String mins = m == 0 ? "" : m + (m == 1 ? " minuto" : " minutos");
-        if (!hs.isEmpty() && !mins.isEmpty()) return hs + " e " + mins;
+        String hs = h == 0 ? "" : h + (h == 1 ? (en ? " hour" : " hora") : (en ? " hours" : " horas"));
+        String mins = m == 0 ? "" : m + (m == 1 ? (en ? " minute" : " minuto") : (en ? " minutes" : " minutos"));
+        if (!hs.isEmpty() && !mins.isEmpty()) return hs + (en ? " and " : " e ") + mins;
         return hs + mins;
     }
 }

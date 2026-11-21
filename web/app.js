@@ -13,7 +13,17 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, alarmVolume: true, nativeVoice: '', momMode: false }, load(SKEY, {}));
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
+
+  // ---------- língua ----------
+  // 'auto' segue a língua do telemóvel: português se for pt-*, inglês em todas as outras.
+  const deviceLang = () => (navigator.language || 'pt').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+  const LANG = settings.lang === 'pt' || settings.lang === 'en' ? settings.lang : deviceLang();
+  const EN = LANG === 'en';
+  const L = (pt, en) => EN ? en : pt;
+  document.documentElement.lang = EN ? 'en' : 'pt-PT';
+  // voz e microfone: português de Portugal, ou o inglês do telemóvel (en-GB, en-US…)
+  const SPEECH_LANG = EN ? ((navigator.language || '').toLowerCase().startsWith('en') ? navigator.language : 'en-US') : 'pt-PT';
 
   // ---------- horas em texto ----------
   const pad = (n) => String(n).padStart(2, '0');
@@ -23,12 +33,18 @@
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const diff = Math.round((d - today) / 864e5);
     if (diff === 0) return '';
-    if (diff === 1) return 'amanhã ';
-    if (diff === -1) return 'ontem ';
-    return d.toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric' }) + ' ';
+    if (diff === 1) return L('amanhã ', 'tomorrow ');
+    if (diff === -1) return L('ontem ', 'yesterday ');
+    return d.toLocaleDateString(L('pt-PT', 'en-GB'), { weekday: 'long', day: 'numeric' }) + ' ';
   };
   const sayTime = (t) => {
     const d = new Date(t), h = d.getHours(), m = d.getMinutes();
+    if (EN) {
+      if (h === 12 && m === 0) return 'noon';
+      if (h === 23 && m === 59) return 'midnight';
+      const h12 = h % 12 || 12, ap = h < 12 ? 'AM' : 'PM';
+      return m === 0 ? h12 + ' ' + ap : h12 + ':' + pad(m) + ' ' + ap;
+    }
     if (h === 12 && m === 0) return 'meio-dia';
     if (h === 23 && m === 59) return 'meia-noite';
     if (m === 0) return h + (h === 1 ? ' hora' : ' horas');
@@ -36,14 +52,22 @@
     return h + ' e ' + m;
   };
   const sayDuration = (ms) => {
-    if (ms < 59500) { const sec = Math.max(1, Math.round(ms / 1000)); return sec + (sec === 1 ? ' segundo' : ' segundos'); }
+    if (ms < 59500) { const sec = Math.max(1, Math.round(ms / 1000)); return sec + (sec === 1 ? L(' segundo', ' second') : L(' segundos', ' seconds')); }
     const total = Math.max(1, Math.round(ms / MIN));
     const h = Math.floor(total / 60), m = total % 60;
-    const hs = h ? h + (h === 1 ? ' hora' : ' horas') : '';
-    const ms_ = m ? m + (m === 1 ? ' minuto' : ' minutos') : '';
-    return [hs, ms_].filter(Boolean).join(' e ');
+    const hs = h ? h + (h === 1 ? L(' hora', ' hour') : L(' horas', ' hours')) : '';
+    const ms_ = m ? m + (m === 1 ? L(' minuto', ' minute') : L(' minutos', ' minutes')) : '';
+    return [hs, ms_].filter(Boolean).join(L(' e ', ' and '));
   };
   const sayInterval = (min) => {
+    if (EN) {
+      if (min < 1) return 'every ' + Math.round(min * 60) + ' seconds';
+      if (min === 1) return 'every minute';
+      if (min === 60) return 'every hour';
+      if (min === 30) return 'every half hour';
+      if (min % 60 === 0) return 'every ' + (min / 60) + ' hours';
+      return 'every ' + min + ' minutes';
+    }
     if (min < 1) { const sec = Math.round(min * 60); return 'de ' + sec + ' em ' + sec + ' segundos'; }
     if (min === 1) return 'de minuto a minuto';
     if (min === 60) return 'de hora a hora';
@@ -86,9 +110,9 @@
   }
   function describe(r) {
     const day = dayWord(r.once ? r.firstAt : (r.end || r.firstAt));
-    if (r.once) return (day ? cap(day) : 'Hoje ') + 'às ' + hm(r.firstAt) + ' · uma vez';
+    if (r.once) return (day ? cap(day) : L('Hoje ', 'Today ')) + L('às ', 'at ') + hm(r.firstAt) + L(' · uma vez', ' · once');
     let s = cap(sayInterval(r.interval));
-    s += r.hasDeadline ? ' · prazo ' + day + 'até às ' + hm(r.end) : ' · até às ' + hm(r.end);
+    s += r.hasDeadline ? L(' · prazo ', ' · due ') + day + L('até às ', 'by ') + hm(r.end) : L(' · até às ', ' · until ') + hm(r.end);
     return s;
   }
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -134,11 +158,11 @@
   let voices = [];
   function loadVoices() {
     if (!('speechSynthesis' in window)) return;
-    voices = speechSynthesis.getVoices().filter(v => /^pt/i.test(v.lang));
+    voices = speechSynthesis.getVoices().filter(v => EN ? /^en/i.test(v.lang) : /^pt/i.test(v.lang));
     voices.sort((a, b) => score(b) - score(a));
     fillVoiceSelect();
   }
-  const score = (v) => (/pt[-_]PT/i.test(v.lang) ? 10 : 0) + (/natural|online|premium|enhanced|neural/i.test(v.name) ? 3 : 0) + (v.localService ? 0 : 1);
+  const score = (v) => (EN ? (v.lang === SPEECH_LANG ? 10 : 0) : (/pt[-_]PT/i.test(v.lang) ? 10 : 0)) + (/natural|online|premium|enhanced|neural/i.test(v.name) ? 3 : 0) + (v.localService ? 0 : 1);
   function pickVoice() {
     return voices.find(v => v.voiceURI === settings.voiceURI) || voices[0] || null;
   }
@@ -157,7 +181,7 @@
       if (!('speechSynthesis' in window)) return res();
       const u = new SpeechSynthesisUtterance(text);
       const v = pickVoice();
-      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'pt-PT';
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = SPEECH_LANG;
       u.rate = settings.rate;
       let done = false;
       const fin = () => { if (!done) { done = true; clearTimeout(guard); res(); } };
@@ -196,7 +220,7 @@
       if (activeRec) { try { activeRec.abort(); } catch (e) {} }
       const rec = new SR();
       activeRec = rec;
-      rec.lang = 'pt-PT';
+      rec.lang = SPEECH_LANG;
       rec.interimResults = true;
       // ditado: continua a ouvir nas pausas e só acaba após ~3,5 s de silêncio (ou novo toque no microfone)
       rec.continuous = !maxMs;
@@ -236,7 +260,7 @@
   // ---------- mensagens faladas ----------
   function message(r, kind) { return cap(rawMessage(r, kind)); }
   // "o meu nome" passa a ser o nome das definições
-  const withName = (t) => t.replace(/\b(?:o\s+)?meu\s+nome\b/gi, settings.name || 'o teu nome');
+  const withName = (t) => t.replace(/\b(?:o\s+)?meu\s+nome\b|\bmy\s+name\b/gi, settings.name || L('o teu nome', 'your name'));
   // Frases variadas para soar a uma pessoa e não a um robô (iguais às do Android, em Msg.java).
   const PHRASES = {
     regularDl: ['{who}não te esqueças: {task}. Tens até às {time}, ainda faltam {left}.',
@@ -260,7 +284,29 @@
     once:      ['{name}, está na hora: {task}.', 'Vá, {name}, agora é a altura: {task}.', 'Coração, chegou a hora: {task}.'],
     snooze:    ['Eu disse que voltava, {name}: {task}.', '{name}, é outra vez a mãe: {task}. Não te esqueças!'],
   };
-  const momName = () => settings.name || 'meu amor';
+  // Frases em inglês (iguais às do Android, em Msg.java)
+  const PHRASES_EN = {
+    regularDl: ["{who}don't forget: {task}. You have until {time}, {left} left.",
+                '{who}just a reminder: {task}. {Left} left until {time}.',
+                '{hey}{Task}. You still have {left}, until {time}.'],
+    regular:   ["{who}don't forget: {task}.", '{who}just a reminder: {task}.', '{hey}{Task}.'],
+    final:     ['{who}last call! {Task}. Only {left} left.', "{who}heads up, it's almost time: {task}. You have until {time}."],
+    deadline:  ["{who}it's time: {task}. Did you manage?", "{who}time's up: {task}. Is it done?"],
+    once:      ["{who}it's time: {task}.", "{hey}It's time: {task}.", '{who}now is the moment: {task}.'],
+    snooze:    ["{who}I'm back, as promised: {task}.", '{who}me again: {task}.'],
+  };
+  const MOM_PHRASES_EN = {
+    regularDl: ["{name}, don't forget: {task}. You still have {left}, until {time}.",
+                'So, {name}? Have you done this yet? {Task}. You only have until {time}.',
+                "{name}, look at the time: {task}. {Left} left, don't leave it to the last minute, honey!"],
+    regular:   ["{name}, don't forget: {task}.", 'Have you done this yet, {name}? {Task}.',
+                "{name}, just reminding you: {task}. Do it now, honey, it'll only take a minute."],
+    final:     ['{name}! Last call: {task}. Only {left} left, hurry up!', "Come on, {name}, it's almost time: {task}. You have until {time}."],
+    deadline:  ["{name}, it's time: {task}. Did you manage, honey?", 'So, {name}? It was now: {task}. Is it done?'],
+    once:      ["{name}, it's time: {task}.", "Come on, {name}, now's the moment: {task}.", "Honey, it's time: {task}."],
+    snooze:    ["I said I'd be back, {name}: {task}.", "{name}, it's mom again: {task}. Don't forget!"],
+  };
+  const momName = () => settings.name || L('meu amor', 'sweetheart');
   // "Ir à InPost" → "ir à InPost", mas "IKEA" fica "IKEA"
   const softLower = (t) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t;
   function rawMessage(r, kind) {
@@ -269,26 +315,38 @@
     const task = r.text.replace(/[.!]+$/, '');
     const dl = r.hasDeadline && r.end > now;
     const key = kind === 'regular' || !PHRASES[kind] ? (dl ? 'regularDl' : 'regular') : kind;
-    const list = (settings.momMode ? MOM_PHRASES : PHRASES)[key];
+    const list = (EN ? (settings.momMode ? MOM_PHRASES_EN : PHRASES_EN) : (settings.momMode ? MOM_PHRASES : PHRASES))[key];
     let out = list[Math.floor(Math.random() * list.length)];
-    if (kind === 'snooze' && dl) out += ' Tens até às {time}.';
+    if (kind === 'snooze' && dl) out += L(' Tens até às {time}.', ' You have until {time}.');
     return out
       .replace('{name}', momName())
       .replace('{who}', settings.name ? settings.name + ', ' : '')
-      .replace('{hey}', settings.name ? 'Ei, ' + settings.name + '! ' : 'Ei! ')
+      .replace('{hey}', settings.name ? L('Ei, ', 'Hey, ') + settings.name + '! ' : L('Ei! ', 'Hey! '))
       .replace('{task}', softLower(task)).replace('{Task}', cap(task))
       .replace(/\{time\}/g, r.end ? sayTime(r.end) : '')
+      .replace('{Left}', r.end ? cap(sayDuration(r.end - now)) : '')
       .replace('{left}', r.end ? sayDuration(r.end - now) : '');
   }
   function confirmation(r) { return cap(rawConfirmation(r)); }
   function rawConfirmation(r) {
     const s0 = rawConfirmation0(r);
     if (!settings.momMode) return s0;
-    return s0.replace(/^Combinado\./, pick(['Está bem, ' + momName() + '.', 'Claro, coração.', 'Deixa comigo, ' + momName() + '.']));
+    return s0.replace(/^(?:Combinado|Okay)\./, pick(EN
+      ? ['Okay, ' + momName() + '.', 'Of course, honey.', 'Leave it to me, ' + momName() + '.']
+      : ['Está bem, ' + momName() + '.', 'Claro, coração.', 'Deixa comigo, ' + momName() + '.']));
   }
   function rawConfirmation0(r) {
     const task = lowerFirst(r.text);
     const day = dayWord(r.once ? r.firstAt : r.firstAt);
+    if (EN) {
+      if (r.once) return "Okay. I'll remind you " + (day ? day : '') + 'at ' + sayTime(r.firstAt) + ': ' + task + '.';
+      let e = r.say ? "Okay. I'll say " + withName(r.say) + ', ' + sayInterval(r.interval) : "Okay. I'll remind you " + sayInterval(r.interval) + ': ' + task;
+      if (r.hasDeadline) e += ', until ' + sayTime(r.end);
+      else if (r.forMs) e += ', for ' + sayDuration(r.forMs);
+      if (r.interval >= 1) e += '. The first reminder is ' + day + 'at ' + sayTime(r.firstAt) + '.';
+      else e += '. Starting in ' + sayDuration(r.firstAt - Date.now()) + '.';
+      return e;
+    }
     if (r.once) return 'Combinado. ' + cap(day + 'às ') + sayTime(r.firstAt) + ' lembro-te de: ' + task + '.';
     let s = r.say
       ? 'Combinado. Vou dizer ' + withName(r.say) + ', ' + sayInterval(r.interval)
@@ -351,16 +409,17 @@
   }
 
   async function listenForAnswer(r) {
-    $('alertHint').textContent = 'A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.';
+    $('alertHint').textContent = L('A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.', 'Listening… say “done”, “snooze 15 minutes” or “delete”.');
     let text = '';
     try { text = await listen({ maxMs: 7000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) {}
     $('alertHint').textContent = '';
     if (!text || !current || current.r !== r) return;
     const t = text.toLowerCase();
-    if (/(feito|fiz|já está|já foi|já fui|tratei|conclu|pronto|despachad|check|ok feito)/.test(t)) await markDone(r, true);
-    else if (/(apaga|cancela|esquece|elimina|remove)/.test(t)) { removeReminder(r); hideAlert(); await speak('Apagado.'); }
-    else if (/(adia|adiar|depois|mais tarde|daqui a|espera|lembra.?me)/.test(t)) {
-      const m = LembreteParser.normalize(t).match(/(\d+)\s*(minutos?|min|horas?|h)\b/);
+    if (/(feito|fiz|já está|já foi|já fui|tratei|conclu|pronto|despachad|check|ok feito|\bdone\b|did it|finished|completed|all set)/.test(t)) await markDone(r, true);
+    else if (/(apaga|cancela|esquece|elimina|remove|delete|cancel|forget it)/.test(t)) { removeReminder(r); hideAlert(); await speak(L('Apagado.', 'Deleted.')); }
+    else if (/(adia|adiar|depois|mais tarde|daqui a|espera|lembra.?me|snooze|later|remind me|wait|\bin \d)/.test(t)) {
+      const P = EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser;
+      const m = P.normalize(t).match(/(\d+)\s*(minutos?|min|minutes?|mins?|horas?|hours?|hrs?|h)\b/);
       const mins = m ? parseInt(m[1], 10) * (/^h/.test(m[2]) ? 60 : 1) : 10;
       await snooze(r, mins, true);
     }
@@ -372,9 +431,9 @@
     $('alert').dataset.kind = kind || 'regular';
     $('alert').hidden = false;
     $('alert').scrollTop = 0;
-    $('alertKicker').textContent = { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Outra vez', once: 'Está na hora' }[kind] || 'Lembrete';
+    $('alertKicker').textContent = (EN ? { final: 'Last call', deadline: "Time's up", snooze: 'Again', once: "It's time" } : { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Outra vez', once: 'Está na hora' })[kind] || L('Lembrete', 'Reminder');
     $('alertTask').textContent = r.text;
-    const left = r.hasDeadline && r.end > Date.now() ? 'Tens até às ' + hm(r.end) + ' · faltam ' + sayDuration(r.end - Date.now()) : '';
+    const left = r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left') : '';
     $('alertMeta').textContent = left;
   }
   function hideAlert() { $('alert').hidden = true; current = null; stopListening(); }
@@ -393,8 +452,9 @@
     if (current && current.r === r) hideAlert();
     closeNotif(r.id);
     if (spoken) await speak(pick(settings.momMode
-      ? ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos uma coisa.']
-      : ['Boa! Está feito.', 'Muito bem, menos uma coisa.', 'Feito. Boa!']));
+      ? (EN ? ["Well done! I'm proud of you.", "Good job, honey! That's the way.", "That's it, " + momName() + '! One less thing.']
+            : ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos uma coisa.'])
+      : (EN ? ["Nice! It's done.", 'Well done, one less thing.', 'Done. Nice!'] : ['Boa! Está feito.', 'Muito bem, menos uma coisa.', 'Feito. Boa!'])));
   }
   async function snooze(r, mins, spoken) {
     r.snoozeAt = Date.now() + mins * MIN;
@@ -404,9 +464,9 @@
     if (current && current.r === r) hideAlert();
     closeNotif(r.id);
     if (spoken) await speak(settings.momMode
-      ? 'Está bem, mas daqui a ' + sayDuration(mins * MIN) + ' volto a lembrar, hein?'
-      : 'Está bem, lembro-te daqui a ' + sayDuration(mins * MIN) + '.');
-    else toast('Volto a lembrar às ' + hm(r.snoozeAt));
+      ? L('Está bem, mas daqui a ' + sayDuration(mins * MIN) + ' volto a lembrar, hein?', "Okay, but I'll remind you again in " + sayDuration(mins * MIN) + ', alright?')
+      : L('Está bem, lembro-te daqui a ' + sayDuration(mins * MIN) + '.', "Okay, I'll remind you in " + sayDuration(mins * MIN) + '.'));
+    else toast(L('Volto a lembrar às ', "I'll remind you again at ") + hm(r.snoozeAt));
   }
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   function removeReminder(r) {
@@ -425,11 +485,11 @@
   function notify(r, kind) {
     if (NATIVE) return;
     if (!notifAllowed()) return;
-    const title = { final: 'Último aviso', deadline: 'Hora limite', once: 'Está na hora' }[kind] || 'Lembrete';
-    const body = r.text + (r.hasDeadline && r.end > Date.now() ? ' · até às ' + hm(r.end) : '');
+    const title = (EN ? { final: 'Last call', deadline: "Time's up", once: "It's time" } : { final: 'Último aviso', deadline: 'Hora limite', once: 'Está na hora' })[kind] || L('Lembrete', 'Reminder');
+    const body = r.text + (r.hasDeadline && r.end > Date.now() ? L(' · até às ', ' · until ') + hm(r.end) : '');
     const opts = { body, tag: 'lembrete-' + r.id, renotify: true, requireInteraction: true, icon: 'icon.svg', badge: 'icon.svg', data: { id: r.id } };
     if (swReg && swReg.showNotification) {
-      swReg.showNotification(title, Object.assign(opts, { actions: [{ action: 'done', title: 'Feito ✓' }, { action: 'snooze', title: '+10 min' }] })).catch(() => {});
+      swReg.showNotification(title, Object.assign(opts, { actions: [{ action: 'done', title: L('Feito ✓', 'Done ✓') }, { action: 'snooze', title: '+10 min' }] })).catch(() => {});
     } else if (document.hidden) {
       try { new Notification(title, opts); } catch (e) {}
     }
@@ -453,7 +513,7 @@
   async function setAwake(on) {
     wantAwake = on;
     $('keepAwake').setAttribute('aria-pressed', String(on));
-    if (!('wakeLock' in navigator)) { if (on) toast('Este browser não deixa manter o ecrã ligado.'); return; }
+    if (!('wakeLock' in navigator)) { if (on) toast(L('Este browser não deixa manter o ecrã ligado.', "This browser can't keep the screen on.")); return; }
     try {
       if (on && !wakeLock) {
         wakeLock = await navigator.wakeLock.request('screen');
@@ -472,16 +532,18 @@
     if (!text) return;
     const t = text.toLowerCase();
 
-    if (/^(?:o\s+)?que\s+(?:é\s+que\s+)?(?:tenho|falta)|^(?:lista|lê|diz)\b.*(?:lembretes|tarefas)|^(?:quais|que)\s+(?:são\s+)?(?:os\s+)?(?:meus\s+)?lembretes/.test(t)) {
+    if (/^(?:o\s+)?que\s+(?:é\s+que\s+)?(?:tenho|falta)|^(?:lista|lê|diz)\b.*(?:lembretes|tarefas)|^(?:quais|que)\s+(?:são\s+)?(?:os\s+)?(?:meus\s+)?lembretes/.test(t)
+        || /^what(?:'s| is| do i have| have i got)\b|^(?:list|read|tell me)\b.*\b(?:reminders|tasks|things)\b|^(?:what are )?my reminders/.test(t)) {
       return readList();
     }
-    const doneM = t.match(/^(?:já\s+)?(?:fiz|feito|terminei|acabei|já fui)\s+(?:o|a|de|que)?\s*(.+)$/);
+    const doneM = t.match(/^(?:já\s+)?(?:fiz|feito|terminei|acabei|já fui)\s+(?:o|a|de|que)?\s*(.+)$/)
+      || t.match(/^(?:i\s+)?(?:did|done|finished|completed|i've done)\s+(?:the\s+|with\s+)?(.+)$/);
     if (doneM) {
       const r = findByWords(doneM[1]);
       if (r) { await markDone(r, true); return; }
     }
 
-    const p = LembreteParser.parse(text, { defaultInterval: settings.defaultInterval });
+    const p = (EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser).parse(text, { defaultInterval: settings.defaultInterval });
     const r = {
       id: Math.random().toString(36).slice(2, 10),
       text: p.task, interval: p.interval, firstAt: p.firstAt, end: p.end,
@@ -491,9 +553,9 @@
     reminders.push(r);
     lastCreated = r;
     save(); render();
-    toast('Adicionado: ' + r.text, [
-      { label: 'Editar', fn: () => openEdit(r) },
-      { label: 'Desfazer', fn: () => { removeReminder(r); speak('Desfeito.'); } },
+    toast(L('Adicionado: ', 'Added: ') + r.text, [
+      { label: L('Editar', 'Edit'), fn: () => openEdit(r) },
+      { label: L('Desfazer', 'Undo'), fn: () => { removeReminder(r); speak(L('Desfeito.', 'Undone.')); } },
     ]);
     await speak(confirmation(r));
   }
@@ -511,13 +573,13 @@
 
   async function readList() {
     const open = reminders.filter(r => !r.done);
-    if (!open.length) return speak('Não tens nada pendente. Boa!');
+    if (!open.length) return speak(L('Não tens nada pendente. Boa!', 'You have nothing pending. Nice!'));
     const parts = open.map(r => {
-      if (r.once) return r.text + ', ' + dayWord(r.firstAt) + 'às ' + sayTime(r.firstAt);
-      if (r.hasDeadline) return r.text + ', até às ' + sayTime(r.end);
+      if (r.once) return r.text + ', ' + dayWord(r.firstAt) + L('às ', 'at ') + sayTime(r.firstAt);
+      if (r.hasDeadline) return r.text + L(', até às ', ', by ') + sayTime(r.end);
       return r.text;
     });
-    await speak('Tens ' + open.length + (open.length === 1 ? ' coisa' : ' coisas') + ' para fazer. ' + parts.join('. ') + '.');
+    await speak(L('Tens ', 'You have ') + open.length + (open.length === 1 ? L(' coisa', ' thing') : L(' coisas', ' things')) + L(' para fazer. ', ' to do. ') + parts.join('. ') + '.');
   }
 
   // ---------- microfone ----------
@@ -525,27 +587,28 @@
   async function onMic() {
     unlock();
     if (micBusy) { stopListening(); return; } // segundo toque: terminei de falar
-    if (!CAN_LISTEN) { setTyping(true); toast('Este browser não percebe voz. Usa o Chrome, o Edge ou o Safari, ou escreve.'); return; }
+    if (!CAN_LISTEN) { setTyping(true); toast(L('Este browser não percebe voz. Usa o Chrome, o Edge ou o Safari, ou escreve.', "This browser doesn't understand speech. Use Chrome, Edge or Safari, or type.")); return; }
     cancelSpeech();
     micBusy = true;
     $('mic').classList.add('listening');
-    $('micLabel').textContent = 'Toca para terminar';
+    $('micLabel').textContent = L('Toca para terminar', 'Tap to finish');
     $('transcript').textContent = '';
     try {
       const text = await listen({ onInterim: (t) => { $('transcript').textContent = '“' + t + '”'; } });
       $('mic').classList.remove('listening');
-      $('micLabel').textContent = 'Toca e fala';
+      $('micLabel').textContent = L('Toca e fala', 'Tap and talk');
       micBusy = false;
-      if (!text) { $('transcript').textContent = 'Não ouvi nada. Tenta outra vez.'; return; }
+      if (!text) { $('transcript').textContent = L('Não ouvi nada. Tenta outra vez.', "I didn't hear anything. Try again."); return; }
       $('transcript').textContent = '“' + text + '”';
       await handleInput(text);
     } catch (e) {
       micBusy = false;
       $('mic').classList.remove('listening');
-      $('micLabel').textContent = 'Toca e fala';
+      $('micLabel').textContent = L('Toca e fala', 'Tap and talk');
       const msg = e.message === 'not-allowed' || e.message === 'service-not-allowed'
-        ? (NATIVE ? 'Tens de autorizar o microfone: Definições do Android → Apps → Mamly → Permissões.' : 'Tens de dar autorização ao microfone (no cadeado ao lado do endereço).')
-        : e.message === 'network' ? 'O reconhecimento de voz precisa de internet.' : 'Não consegui ouvir. Tenta outra vez ou escreve.';
+        ? (NATIVE ? L('Tens de autorizar o microfone: Definições do Android → Apps → Mamly → Permissões.', 'Allow the microphone: Android Settings → Apps → Mamly → Permissions.')
+                  : L('Tens de dar autorização ao microfone (no cadeado ao lado do endereço).', 'Allow the microphone (padlock next to the address).'))
+        : e.message === 'network' ? L('O reconhecimento de voz precisa de internet.', 'Speech recognition needs internet.') : L('Não consegui ouvir. Tenta outra vez ou escreve.', "I couldn't hear you. Try again or type.");
       $('transcript').textContent = msg;
     }
   }
@@ -560,7 +623,7 @@
     undo: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12.5 8c-2.6 0-5 1-6.9 2.6L2 7v9h9l-3.6-3.6A8 8 0 0 1 20.1 16l2.4-.8A10.5 10.5 0 0 0 12.5 8Z"/></svg>',
     trash: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6v12ZM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4Z"/></svg>',
   };
-  const shortInterval = (min) => min < 1 ? 'De ' + Math.round(min * 60) + ' em ' + Math.round(min * 60) + ' s' : min === 1 ? 'De minuto a minuto' : min === 60 ? 'De hora a hora' : min === 30 ? 'De meia em meia hora' : min % 60 === 0 ? 'De ' + (min / 60) + ' em ' + (min / 60) + ' h' : 'De ' + min + ' em ' + min + ' min';
+  const shortInterval = (min) => EN ? cap(sayInterval(min)) : min < 1 ? 'De ' + Math.round(min * 60) + ' em ' + Math.round(min * 60) + ' s' : min === 1 ? 'De minuto a minuto' : min === 60 ? 'De hora a hora' : min === 30 ? 'De meia em meia hora' : min % 60 === 0 ? 'De ' + (min / 60) + ' em ' + (min / 60) + ' h' : 'De ' + min + ' em ' + min + ' min';
 
   function render() {
     const open = reminders.filter(r => !r.done).sort((a, b) => {
@@ -576,35 +639,37 @@
     $('doneList').innerHTML = done.map(r => `<li class="item finished" data-id="${r.id}">
         <span class="check" aria-hidden="true">${ICON.check}</span>
         <div class="item-body"><p class="item-task">${esc(r.text)}</p></div>
-        <div class="item-when"><small>feito às ${hm(r.doneAt)}</small>
-          <span style="display:flex;gap:6px"><button class="say" data-act="undo" aria-label="Voltar a pôr na lista" title="Desfazer">${ICON.undo}</button>
-          <button class="say" data-act="delete" aria-label="Apagar" title="Apagar">${ICON.trash}</button></span></div></li>`).join('');
+        <div class="item-when"><small>${L('feito às ', 'done at ')}${hm(r.doneAt)}</small>
+          <span style="display:flex;gap:6px"><button class="say" data-act="undo" aria-label="${L('Voltar a pôr na lista', 'Put back on the list')}" title="${L('Desfazer', 'Undo')}">${ICON.undo}</button>
+          <button class="say" data-act="delete" aria-label="${L('Apagar', 'Delete')}" title="${L('Apagar', 'Delete')}">${ICON.trash}</button></span></div></li>`).join('');
     renderHeader(open, done);
     updateCountdowns();
   }
 
   function renderHeader(open, done) {
     const h = new Date().getHours();
-    const hello = h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite';
-    $('greeting').textContent = hello + (settings.name ? ', ' + settings.name : settings.momMode ? ', meu amor' : '') + (settings.momMode ? ' 💛' : '.');
-    $('today').textContent = cap(new Date().toLocaleDateString('pt-PT', { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', ''));
+    const hello = EN ? (h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening')
+                     : (h < 6 ? 'Boa noite' : h < 13 ? 'Bom dia' : h < 20 ? 'Boa tarde' : 'Boa noite');
+    $('greeting').textContent = hello + (settings.name ? ', ' + settings.name : settings.momMode ? L(', meu amor', ', sweetheart') : '') + (settings.momMode ? ' 💛' : '.');
+    $('today').textContent = cap(new Date().toLocaleDateString(L('pt-PT', 'en-GB'), { weekday: 'long', day: 'numeric', month: 'short' }).replace('.', ''));
     document.querySelector('.list-head').hidden = open.length === 0;
     const n = open.length;
     $('summary').innerHTML = n === 0
-      ? (done.length ? 'Tudo feito. <b>Boa!</b>' : 'Nada pendente. Diz-me o que tens de fazer.')
+      ? (done.length ? L('Tudo feito. <b>Boa!</b>', 'All done. <b>Nice!</b>') : L('Nada pendente. Diz-me o que tens de fazer.', 'Nothing pending. Tell me what you need to do.'))
+      : EN ? 'You have <b>' + n + (n === 1 ? ' thing' : ' things') + '</b> to do' + (done.length ? ' · ' + done.length + ' already done' : '') + '.'
       : 'Tens <b>' + n + (n === 1 ? ' coisa' : ' coisas') + '</b> para fazer' + (done.length ? ' · ' + done.length + ' já ' + (done.length === 1 ? 'feita' : 'feitas') : '') + '.';
   }
 
   function itemHTML(r) {
     const st = status(r);
     const tags = [];
-    if (r.once) tags.push(`<span class="tag">${ICON.bell}Uma vez</span>`);
+    if (r.once) tags.push(`<span class="tag">${ICON.bell}${L('Uma vez', 'Once')}</span>`);
     else tags.push(`<span class="tag">${ICON.repeat}${esc(shortInterval(r.interval))}</span>`);
-    if (r.hasDeadline) tags.push(`<span class="tag deadline">${ICON.clock}${dayWord(r.end)}até ${hm(r.end)}</span>`);
-    else if (!r.once && r.end) tags.push(`<span class="tag">até ${hm(r.end)}</span>`);
+    if (r.hasDeadline) tags.push(`<span class="tag deadline">${ICON.clock}${EN ? 'by ' + dayWord(r.end) : dayWord(r.end) + 'até '}${hm(r.end)}</span>`);
+    else if (!r.once && r.end) tags.push(`<span class="tag">${L('até', 'until')} ${hm(r.end)}</span>`);
     return `<li class="item ${st}" data-id="${r.id}">
-      <button class="check" data-act="done" aria-label="Marcar como feito">${ICON.check}</button>
-      <button class="item-body" data-act="edit" aria-label="Editar ${esc(r.text)}">
+      <button class="check" data-act="done" aria-label="${L('Marcar como feito', 'Mark as done')}">${ICON.check}</button>
+      <button class="item-body" data-act="edit" aria-label="${L('Editar', 'Edit')} ${esc(r.text)}">
         <p class="item-task">${esc(r.text)}</p>
         <div class="item-meta">${tags.join('')}</div>
         ${r.hasDeadline ? `<div class="item-bar"><i data-bar="${r.id}"></i></div>` : ''}
@@ -626,7 +691,7 @@
       const ev = nextEvent(r);
       const b = el.querySelector('b'), sm = el.querySelector('small');
       const big = ev ? bigTime(ev.at, now) : (r.hasDeadline || r.once ? '!' : '—');
-      const small = ev ? (dayWord(ev.at) ? dayWord(ev.at).trim() : 'em ' + shortDur(ev.at - now)) : (r.hasDeadline || r.once ? 'Já passou. Fizeste?' : 'sem avisos');
+      const small = ev ? (dayWord(ev.at) ? dayWord(ev.at).trim() : L('em ', 'in ') + shortDur(ev.at - now)) : (r.hasDeadline || r.once ? L('Já passou. Fizeste?', 'Time passed. Done?') : L('sem avisos', 'no reminders'));
       if (b.textContent !== big) b.textContent = big;
       if (sm.textContent !== small) sm.textContent = small;
     });
@@ -647,12 +712,12 @@
     });
     $('next').hidden = !best;
     if (!best) return;
-    const label = { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Volto a lembrar', once: 'A seguir' }[bestEv.kind] || 'Próximo aviso';
+    const label = (EN ? { final: 'Last call', deadline: "Time's up", snooze: 'Back soon', once: 'Up next' } : { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Volto a lembrar', once: 'A seguir' })[bestEv.kind] || L('Próximo aviso', 'Next reminder');
     setText('nextKind', label);
-    setText('nextIn', dayWord(bestEv.at) ? cap(dayWord(bestEv.at).trim()) : 'daqui a ' + shortDur(bestEv.at - now));
+    setText('nextIn', dayWord(bestEv.at) ? cap(dayWord(bestEv.at).trim()) : L('daqui a ', 'in ') + shortDur(bestEv.at - now));
     setText('nextTime', bigTime(bestEv.at, now));
     setText('nextTask', best.text);
-    const meta = best.once ? 'Aviso único' : shortInterval(best.interval) + (best.hasDeadline ? ' · prazo às ' + hm(best.end) : '');
+    const meta = best.once ? L('Aviso único', 'One-time reminder') : shortInterval(best.interval) + (best.hasDeadline ? L(' · prazo às ', ' · due at ') + hm(best.end) : '');
     setText('nextMeta', meta);
     // anel: quanto falta para o próximo aviso (cheio = acabou de avisar, vazio = vai tocar)
     const span = best.once ? Math.max(bestEv.at - (best.createdAt || now), MIN) : (bestEv.kind === 'regular' ? best.interval * MIN : 15 * MIN);
@@ -700,7 +765,7 @@
     $('eTask').value = r.text;
     $('eInterval').value = r.once ? '0' : String(r.interval);
     if (!$('eInterval').value) {
-      const o = document.createElement('option'); o.value = r.interval; o.textContent = 'De ' + r.interval + ' em ' + r.interval + ' min';
+      const o = document.createElement('option'); o.value = r.interval; o.textContent = L('De ' + r.interval + ' em ' + r.interval + ' min', 'Every ' + r.interval + ' min');
       $('eInterval').appendChild(o); $('eInterval').value = String(r.interval);
     }
     $('eStart').value = toTimeInput(r.snoozeAt && r.snoozeAt > Date.now() ? r.snoozeAt : (nextEvent(r) || { at: r.firstAt }).at);
@@ -713,7 +778,7 @@
     const once = $('eInterval').value === '0';
     $('eEndWrap').style.visibility = once ? 'hidden' : 'visible';
     $('eDeadline').closest('label').hidden = once;
-    $('eStartLabel').textContent = once ? 'Hora do aviso' : 'Próximo aviso';
+    $('eStartLabel').textContent = once ? L('Hora do aviso', 'Reminder time') : L('Próximo aviso', 'Next reminder');
   }
   function saveEdit() {
     const r = editing; if (!r) return;
@@ -736,7 +801,7 @@
     }
     r.done = false;
     save(); render();
-    toast('Guardado');
+    toast(L('Guardado', 'Saved'));
   }
 
   // ---------- definições ----------
@@ -744,23 +809,24 @@
   function fillNativeVoices() {
     let list = [];
     try { list = JSON.parse(NATIVE.voices() || '[]'); } catch (e) {}
-    list = list.filter(v => v.installed !== false);
+    list = list.filter(v => v.installed !== false && (EN ? /^(en|eng)/i.test(v.lang || 'en') : true));
     list.sort((a, b) => (b.country === 'PT') - (a.country === 'PT') || (b.network - a.network) || (b.quality - a.quality) || a.name.localeCompare(b.name));
     const count = {};
     const opts = list.map(v => {
-      const c = v.country === 'PT' ? 'Portugal' : v.country === 'BR' ? 'Brasil' : (v.country || 'Português');
+      const c = EN ? ({ GB: 'UK', US: 'US', AU: 'Australia', IN: 'India', IE: 'Ireland', CA: 'Canada', ZA: 'South Africa' }[v.country] || v.country || 'English')
+                   : v.country === 'PT' ? 'Portugal' : v.country === 'BR' ? 'Brasil' : (v.country || 'Português');
       count[c] = (count[c] || 0) + 1;
-      const tag = v.network ? ' · natural (usa internet)' : v.quality >= 400 ? ' · alta qualidade' : '';
-      return `<option value="${esc(v.name)}">Voz ${count[c]} · ${c}${tag}</option>`;
+      const tag = v.network ? L(' · natural (usa internet)', ' · natural (uses internet)') : v.quality >= 400 ? L(' · alta qualidade', ' · high quality') : '';
+      return `<option value="${esc(v.name)}">${L('Voz', 'Voice')} ${count[c]} · ${c}${tag}</option>`;
     });
-    $('sVoice').innerHTML = '<option value="">Automática (a do sistema)</option>' + opts.join('');
+    $('sVoice').innerHTML = '<option value="">' + L('Automática (a do sistema)', 'Automatic (system voice)') + '</option>' + opts.join('');
     $('sVoice').value = settings.nativeVoice || '';
     if ($('sVoice').value !== (settings.nativeVoice || '')) $('sVoice').value = '';
   }
   function fillVoiceSelect() {
     if (NATIVE) return fillNativeVoices();
     const sel = $('sVoice');
-    if (!voices.length) { sel.innerHTML = '<option value="">Voz do sistema</option>'; return; }
+    if (!voices.length) { sel.innerHTML = '<option value="">' + L('Voz do sistema', 'System voice') + '</option>'; return; }
     sel.innerHTML = voices.map(v => `<option value="${esc(v.voiceURI)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
     sel.value = (pickVoice() || {}).voiceURI || '';
   }
@@ -775,7 +841,7 @@
     $('sMom').checked = !!settings.momMode;
     $('sListen').disabled = !CAN_LISTEN;
     fillVoiceSelect();
-    $('appVersion').textContent = NATIVE && NATIVE.version ? 'versão ' + NATIVE.version() : 'versão web';
+    $('appVersion').textContent = NATIVE && NATIVE.version ? L('versão ', 'version ') + NATIVE.version() : L('versão web', 'web version');
     $('settingsDlg').showModal();
     if (NATIVE) {
       showDiag();
@@ -790,10 +856,10 @@
     const st = d.status || {};
     const yn = (v) => v ? '✅' : '❌';
     $('diagInfo').innerHTML = esc(d.device || '') + '<br>' +
-      yn(st.notifications) + ' notificações · ' + yn(st.exact) + ' alarmes exatos · ' + yn(st.battery) + ' sem poupança de bateria · ' + yn(st.tts) + ' voz<br>' +
-      'Avisos marcados no Android: <b>' + (d.events || 0) + '</b>' + (d.next ? ' · próximo às <b>' + esc(d.next) + '</b>' : '');
+      yn(st.notifications) + L(' notificações · ', ' notifications · ') + yn(st.exact) + L(' alarmes exatos · ', ' exact alarms · ') + yn(st.battery) + L(' sem poupança de bateria · ', ' no battery saving · ') + yn(st.tts) + L(' voz<br>', ' voice<br>') +
+      L('Avisos marcados no Android: <b>', 'Reminders scheduled on Android: <b>') + (d.events || 0) + '</b>' + (d.next ? L(' · próximo às <b>', ' · next at <b>') + esc(d.next) + '</b>' : '');
     const lines = (d.log || []).slice().reverse();
-    $('diagLog').textContent = lines.length ? lines.join('\n') : 'Ainda sem registos.';
+    $('diagLog').textContent = lines.length ? lines.join('\n') : L('Ainda sem registos.', 'No entries yet.');
   }
   function readSettings() {
     settings.name = $('sName').value.trim();
@@ -881,13 +947,13 @@
   $('settingsForm').addEventListener('change', readSettings);
   $('sMom').addEventListener('change', () => {
     readSettings(); unlock(); render();
-    if (settings.momMode) speak(message({ text: 'Ir à InPost', hasDeadline: true, end: Date.now() + 55 * MIN }, 'regular'));
-    else speak('Modo mãe desligado.');
+    if (settings.momMode) speak(message({ text: L('Ir à InPost', 'Go to the post office'), hasDeadline: true, end: Date.now() + 55 * MIN }, 'regular'));
+    else speak(L('Modo mãe desligado.', 'Mom mode off.'));
   });
   $('settingsDlg').addEventListener('close', readSettings);
   $('sTest').addEventListener('click', () => {
     readSettings(); unlock();
-    speak(message({ text: 'Ir à InPost', hasDeadline: true, end: Date.now() + 130 * MIN }, 'regular'));
+    speak(message({ text: L('Ir à InPost', 'Go to the post office'), hasDeadline: true, end: Date.now() + 130 * MIN }, 'regular'));
   });
 
   $('keepAwake').addEventListener('click', () => setAwake(!wantAwake));
@@ -916,7 +982,7 @@
       });
       NATIVE.sync(JSON.stringify({
         events,
-        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode },
+        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode, lang: LANG },
       }));
     }, 200);
   }
@@ -937,13 +1003,16 @@
     let st = {};
     try { st = JSON.parse(NATIVE.status()); } catch (e) {}
     if (st.noPortuguese) {
-      $('noticeText').innerHTML = '<b>O teu telemóvel não tem voz em português.</b> Os avisos tocam e aparecem, mas a voz fica calada (para não falar noutra língua). '
-        + (st.googleTts ? 'Instala a voz <b>Português (Portugal)</b> e escolhe <b>Google</b> como motor de voz.' : 'Instala os <b>Serviços de voz da Google</b> e depois a voz <b>Português (Portugal)</b>.')
-        + ' Depois volta aqui.';
+      $('noticeText').innerHTML = EN
+        ? "<b>Your phone has no English voice.</b> Reminders still ring and show up, but the voice stays quiet (so it doesn't speak another language). "
+          + (st.googleTts ? 'Install an <b>English</b> voice and choose <b>Google</b> as the speech engine.' : 'Install <b>Speech Services by Google</b> and then an <b>English</b> voice.') + ' Then come back here.'
+        : '<b>O teu telemóvel não tem voz em português.</b> Os avisos tocam e aparecem, mas a voz fica calada (para não falar noutra língua). '
+          + (st.googleTts ? 'Instala a voz <b>Português (Portugal)</b> e escolhe <b>Google</b> como motor de voz.' : 'Instala os <b>Serviços de voz da Google</b> e depois a voz <b>Português (Portugal)</b>.')
+          + ' Depois volta aqui.';
     } else {
       $('noticeText').innerHTML = st.battery && st.notifications && st.exact
-        ? '<b>Tudo pronto.</b> Os avisos tocam e falam mesmo com o ecrã desligado.'
-        : '<b>Falta um passo</b> para os avisos tocarem com o ecrã desligado:';
+        ? L('<b>Tudo pronto.</b> Os avisos tocam e falam mesmo com o ecrã desligado.', '<b>All set.</b> Reminders ring and speak even with the screen off.')
+        : L('<b>Falta um passo</b> para os avisos tocarem com o ecrã desligado:', '<b>One more step</b> so reminders ring with the screen off:');
     }
     $('fixVoice').hidden = !st.noPortuguese;
     $('fixVoiceSettings').hidden = !st.noPortuguese;
@@ -989,14 +1058,14 @@
       settings.nativeVoice = $('sVoice').value;
       NATIVE.setVoice(settings.nativeVoice);
       saveSettings();
-      speak((settings.name ? 'Olá, ' + settings.name + '! ' : 'Olá! ') + 'É assim que te vou lembrar das coisas.');
+      speak((settings.name ? L('Olá, ', 'Hi, ') + settings.name + '! ' : L('Olá! ', 'Hi! ')) + L('É assim que te vou lembrar das coisas.', "This is how I'll remind you of things."));
     });
     $('sAlarmWrap').hidden = false;
     $('sTestStandby').hidden = false;
     $('diagWrap').hidden = false;
     $('sTestNow').addEventListener('click', () => {
       NATIVE.testNow();
-      toast('Daqui a 10 segundos deve falar. Podes desligar o ecrã.');
+      toast(L('Daqui a 10 segundos deve falar. Podes desligar o ecrã.', 'It should speak in 10 seconds. You can turn the screen off.'));
       showDiag();
     });
     $('fixBattery').addEventListener('click', () => NATIVE.openBatterySettings());
@@ -1008,11 +1077,11 @@
       readSettings();
       $('settingsDlg').close();
       const r = {
-        id: Math.random().toString(36).slice(2, 10), text: 'Isto é um teste do Mamly', interval: null,
+        id: Math.random().toString(36).slice(2, 10), text: L('Isto é um teste do Mamly', 'This is a Mamly test'), interval: null,
         firstAt: Date.now() + 60e3, end: null, once: true, hasDeadline: false, createdAt: Date.now(), lastAt: 0, done: false,
       };
       reminders.push(r); save(); render();
-      speak('Desliga o ecrã agora. Daqui a um minuto vou falar.');
+      speak(L('Desliga o ecrã agora. Daqui a um minuto vou falar.', "Turn the screen off now. I'll speak in one minute."));
     });
   }
 
@@ -1040,13 +1109,14 @@
   }
   async function shareReminder(r) {
     const url = shareLink(r);
-    const who = settings.name ? settings.name + ' quer' : 'Querem';
-    const text = who + ' lembrar-te de: ' + r.text + ' (' + lowerFirst(describe(r)) + '). Toca para adicionar ao Mamly 💛 ' + url;
+    const text = EN
+      ? (settings.name ? settings.name + ' wants' : 'Someone wants') + ' to remind you: ' + r.text + ' (' + lowerFirst(describe(r)) + '). Tap to add it to Mamly 💛 ' + url
+      : (settings.name ? settings.name + ' quer' : 'Querem') + ' lembrar-te de: ' + r.text + ' (' + lowerFirst(describe(r)) + '). Toca para adicionar ao Mamly 💛 ' + url;
     nativeLog('Partilhar lembrete');
     if (NATIVE && NATIVE.share) { NATIVE.share(text); return; }
     if (navigator.share) { try { await navigator.share({ text }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
-    try { await navigator.clipboard.writeText(text); toast('Link copiado. Cola-o no WhatsApp ou numa mensagem.'); }
-    catch (e) { prompt('Copia este link e envia-o:', url); }
+    try { await navigator.clipboard.writeText(text); toast(L('Link copiado. Cola-o no WhatsApp ou numa mensagem.', 'Link copied. Paste it into WhatsApp or a message.')); }
+    catch (e) { prompt(L('Copia este link e envia-o:', 'Copy this link and send it:'), url); }
   }
 
   let incoming = null;
@@ -1062,12 +1132,12 @@
       if (sh.hasDeadline && sh.end && sh.end <= now) expired = true;
     } else if (sh.once && sh.firstAt <= now) expired = true;
     incoming = sh;
-    $('shareTitle').textContent = sh.from ? sh.from + ' quer lembrar-te de' : 'Recebeste um lembrete';
+    $('shareTitle').textContent = sh.from ? sh.from + L(' quer lembrar-te de', ' wants to remind you') : L('Recebeste um lembrete', 'You got a reminder');
     $('shareTask').textContent = sh.text;
     $('shareWhen').textContent = describe(Object.assign({}, sh, { interval: sh.interval || 60 }));
     $('shareNote').textContent = expired
-      ? 'Atenção: a hora deste lembrete já passou. Se aceitares, podes ajustá-la a seguir.'
-      : 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.';
+      ? L('Atenção: a hora deste lembrete já passou. Se aceitares, podes ajustá-la a seguir.', "Heads up: this reminder's time has passed. If you accept, you can adjust it next.")
+      : L('Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.', "If you accept, Mamly will remind you as if you'd created it yourself.");
     if (!$('shareDlg').open) $('shareDlg').showModal();
   }
   $('shareYes').addEventListener('click', async () => {
@@ -1081,7 +1151,9 @@
     if (r.once && r.firstAt <= Date.now()) r.firstAt = Date.now() + 5 * MIN;
     reminders.push(r); save(); render();
     unlock();
-    await speak((settings.momMode ? 'Está bem, ' + momName() + '. ' : 'Combinado. ') + (sh.from ? sh.from + ' pediu-me para te lembrar: ' : 'Vou lembrar-te: ') + lowerFirst(sh.text) + '.');
+    await speak(EN
+      ? (settings.momMode ? 'Okay, ' + momName() + '. ' : 'Okay. ') + (sh.from ? sh.from + ' asked me to remind you: ' : "I'll remind you: ") + lowerFirst(sh.text) + '.'
+      : (settings.momMode ? 'Está bem, ' + momName() + '. ' : 'Combinado. ') + (sh.from ? sh.from + ' pediu-me para te lembrar: ' : 'Vou lembrar-te: ') + lowerFirst(sh.text) + '.');
     if (r.once && sh.firstAt <= Date.now()) openEdit(r);
   });
   $('shareNo').addEventListener('click', () => { incoming = null; $('shareDlg').close(); });
@@ -1091,14 +1163,80 @@
     if (/[#&]r=/.test(location.hash)) {
       const sh = decodeShare(location.hash);
       history.replaceState(null, '', location.pathname + location.search);
-      if (sh) showIncoming(sh); else toast('Este link de lembrete não está completo.');
+      if (sh) showIncoming(sh); else toast(L('Este link de lembrete não está completo.', 'This reminder link is incomplete.'));
     }
     if (NATIVE && NATIVE.takeSharedLink) {
       const link = NATIVE.takeSharedLink();
-      if (link) { const sh = decodeShare(link); if (sh) showIncoming(sh); else toast('Este link de lembrete não está completo.'); }
+      if (link) { const sh = decodeShare(link); if (sh) showIncoming(sh); else toast(L('Este link de lembrete não está completo.', 'This reminder link is incomplete.')); }
     }
   }
   window.addEventListener('hashchange', checkIncomingLink);
+
+  // ---------- interface em inglês ----------
+  // Os textos do index.html estão em português; em inglês trocamo-los ao arrancar (texto e atributos).
+  const UI_EN = {
+    'Toca aqui para ligar o som': 'Tap here to turn on sound',
+    'O browser só deixa falar depois de um toque.': 'The browser only allows speech after a tap.',
+    'Ecrã ligado': 'Screen on', 'A seguir': 'Up next', 'Hoje e a seguir': 'Today and next',
+    'A tua cabeça fica livre.': 'Free your mind.',
+    'Carrega no microfone e diz o que não te podes esquecer. Eu lembro-te em voz alta.': "Tap the microphone and say what you can't forget. I'll remind you out loud.",
+    '“De hora a hora ir à InPost até às 16h”': '“Every hour go to the post office until 4pm”',
+    '“Daqui a 20 min tirar a roupa”': '“In 20 minutes take out the laundry”',
+    '“Amanhã às 9 ligar ao dentista”': '“Tomorrow at 9 call the dentist”',
+    'Feitos': 'Done', 'Limpar feitos': 'Clear done',
+    'Deixa esta página aberta.': 'Keep this page open.',
+    'Os avisos tocam enquanto a página estiver aberta (pode estar noutro separador ou com o ecrã ligado). Se fechares o browser, não toca.': "Reminders ring while this page is open (another tab or with the screen on is fine). If you close the browser, it won't ring.",
+    'Ativar notificações': 'Turn on notifications', 'Permitir funcionar em segundo plano': 'Allow running in the background',
+    'Permitir alarmes': 'Allow alarms', 'Instalar voz portuguesa': 'Install an English voice', 'Definições de voz': 'Voice settings',
+    'Fechar': 'Close', 'Agora': 'Now', 'Feito': 'Done', 'Repetir': 'Repeat', 'Escrever': 'Type', 'Toca e fala': 'Tap and talk', 'Ouvir': 'Listen',
+    'Editar lembrete': 'Edit reminder', 'O que tens de fazer': 'What you need to do', 'Só uma vez': 'Just once',
+    'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
+    'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
+    'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
+    'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
+    'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
+    'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",
+    'Agora não': 'Not now', 'Aceitar': 'Accept', 'Definições': 'Settings',
+    'O teu nome (a voz chama-te pelo nome)': 'Your name (the voice calls you by name)', 'Voz (escolhe e ouve como soa)': 'Voice (pick one and hear it)',
+    'Voz do sistema': 'System voice', 'Velocidade da voz': 'Voice speed', 'Quando não dizes de quanto em quanto tempo': "When you don't say how often",
+    'Repetir a mensagem': 'Repeat the message', '1 vez': 'Once', '2 vezes': 'Twice', '3 vezes': '3 times',
+    'Modo mãe 💛': 'Mom mode 💛', 'A voz fala como uma mãe carinhosa:': 'The voice talks like a caring mom:', 'Meu amor, não te esqueças…': "Sweetheart, don't forget…",
+    'Tocar um sinal antes de falar': 'Play a chime before speaking',
+    'Usar o volume do alarme (ouve-se mesmo com o telemóvel em silêncio)': 'Use alarm volume (heard even when the phone is on silent)',
+    'Depois do aviso, ouvir a resposta (': 'After a reminder, listen for a reply (', 'feito': 'done', 'adia 15 minutos': 'snooze 15 minutes',
+    'Diagnóstico': 'Diagnostics', 'Testar agora (fala daqui a 10 s)': 'Test now (speaks in 10 s)', 'Sobre e privacidade': 'About & privacy',
+    'Os teus lembretes ficam guardados': 'Your reminders are stored', 'só neste telemóvel': 'only on this phone',
+    '. A app não tem contas, não tem publicidade e não envia os teus lembretes para lado nenhum.': ". The app has no accounts, no ads, and doesn't send your reminders anywhere.",
+    'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
+    'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
+    'Testar voz': 'Test voice', 'Testar com ecrã desligado': 'Test with screen off',
+    'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)',
+    // atributos
+    'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
+    'Lembra-me de hora a hora de ir à InPost até às 16h': 'Remind me every hour to go to the post office until 4pm',
+    'Daqui a 20 minutos tirar a roupa da máquina': 'In 20 minutes take out the laundry', 'Amanhã às 9 ligar ao dentista': 'Tomorrow at 9 call the dentist',
+    'Fechar e voltar à lista': 'Close and go back to the list', 'Ex.: às 15h ligar à mãe': 'E.g. at 3pm call mom', 'Escrever lembrete': 'Type a reminder',
+    'Adicionar': 'Add', 'Escrever em vez de falar': 'Type instead of talking', 'Falar um lembrete': 'Speak a reminder',
+    'Ouvir o que tenho para fazer': 'Hear what I have to do', 'opcional': 'optional', 'Marcar como feito': 'Mark as done',
+  };
+  function translateUI() {
+    if (!EN) return;
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = w.nextNode())) {
+      const raw = n.nodeValue, key = raw.replace(/\s+/g, ' ').trim();
+      if (key && UI_EN[key]) n.nodeValue = raw.replace(raw.trim(), UI_EN[key]);
+    }
+    document.querySelectorAll('[placeholder],[aria-label],[title],[data-example]').forEach(el => {
+      ['placeholder', 'aria-label', 'title', 'data-example'].forEach(a => { const v = el.getAttribute(a); if (v && UI_EN[v]) el.setAttribute(a, UI_EN[v]); });
+    });
+  }
+  translateUI();
+  $('sLang').value = settings.lang || 'auto';
+  $('sLang').addEventListener('change', () => {
+    settings.lang = $('sLang').value; saveSettings();
+    setTimeout(() => location.reload(), 150);   // a língua aplica-se ao recarregar
+  });
 
   // ---------- arranque ----------
   if ('speechSynthesis' in window) {
@@ -1106,12 +1244,12 @@
     speechSynthesis.addEventListener ? speechSynthesis.addEventListener('voiceschanged', loadVoices) : (speechSynthesis.onvoiceschanged = loadVoices);
   }
   if (!CAN_LISTEN) {
-    $('micLabel').textContent = 'Sem voz neste browser';
+    $('micLabel').textContent = L('Sem voz neste browser', 'No voice in this browser');
     setTyping(true);
     $('mic').disabled = true;
   }
   if (!NATIVE) {
-    if (!('speechSynthesis' in window)) toast('Este browser não consegue falar. Usa o Chrome, o Edge ou o Safari.');
+    if (!('speechSynthesis' in window)) toast(L('Este browser não consegue falar. Usa o Chrome, o Edge ou o Safari.', "This browser can't speak. Use Chrome, Edge or Safari."));
     $('unlock').hidden = false;
     updateNotifButton();
   } else {
