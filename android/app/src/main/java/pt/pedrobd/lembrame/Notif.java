@@ -71,6 +71,15 @@ final class Notif {
                 .addAction(0, en ? "Done ✓" : "Feito ✓", action(c, ActionReceiver.DONE, e, 10))
                 .addAction(0, "+10 min", action(c, ActionReceiver.SNOOZE, e, 10))
                 .addAction(0, "+30 min", action(c, ActionReceiver.SNOOZE, e, 30));
+        // Com o ecrã bloqueado, o aviso abre por cima (como um despertador) para se poder responder por voz.
+        // Com o telemóvel em uso, o Android mostra só a notificação no topo.
+        if (Store.settings(c).optBoolean("lockAlert", true)) {
+            Intent fi = new Intent(c, MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    .putExtra("alert", rid);
+            PendingIntent full = PendingIntent.getActivity(c, 4, fi, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            b.setFullScreenIntent(full, true).setCategory(NotificationCompat.CATEGORY_ALARM);
+        }
         try { NotificationManagerCompat.from(c).notify(idFor(rid), b.build()); }
         catch (SecurityException ignored) {}
     }

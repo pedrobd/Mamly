@@ -103,8 +103,9 @@ public class ReminderService extends Service {
             speech.pause(900, "pause-" + (seq++), id -> post(null));
         }
         for (JSONObject e : due) {
-            Notif.reminder(this, e);
             final String rid = e.optString("rid");
+            AlertState.fired(rid, e.optString("kind"));
+            Notif.reminder(this, e);
             MainActivity.dispatch("onFired", rid, e.optString("kind"));
             String text = Msg.build(e, s, now);
             Store.log(this, "A dizer: " + e.optString("task"));
@@ -141,7 +142,7 @@ public class ReminderService extends Service {
     private void post(String rid) { handler.post(() -> done(rid)); }
 
     private void done(String rid) {
-        if (rid != null) { MainActivity.dispatch("onSpoken", rid); Store.log(this, "Voz terminou"); }
+        if (rid != null) { AlertState.spoken(rid); MainActivity.dispatch("onSpoken", rid); Store.log(this, "Voz terminou"); }
         outstanding--;
         maybeStop();
     }

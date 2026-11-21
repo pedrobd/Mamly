@@ -2,6 +2,9 @@ package pt.pedrobd.lembrame;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.KeyguardManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -41,6 +44,9 @@ public class MainActivity extends Activity {
     private String pendingListenMode = null;
     private String pendingSharedLink = null;
     private boolean pageReady = false;
+    private boolean overLock = false;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable lockTimeout = this::alertClosed;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,6 +114,7 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new Bridge(this), "AndroidBridge");
         web.loadUrl(START);
         captureSharedLink(getIntent());
+        handleAlertIntent(getIntent());
 
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
@@ -126,6 +133,50 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         if (captureSharedLink(intent) && pageReady) js("window.__native && __native.onSharedLink && __native.onSharedLink()");
+        handleAlertIntent(intent);
+    }
+
+    /** Aberto pelo aviso (ecrã bloqueado): mostra a app por cima do bloqueio, com o ecrã aceso, durante o aviso. */
+    private void handleAlertIntent(Intent i) {
+        if (i == null || i.getStringExtra("alert") == null) return;
+        i.removeExtra("alert");
+        showOverLock(true);
+        handler.removeCallbacks(lockTimeout);
+        handler.postDelayed(lockTimeout, 90_000); // se ninguém responder, volta ao ecrã de bloqueio
+        Store.log(this, "Aviso aberto no ecrã de bloqueio");
+    }
+
+    private void showOverLock(boolean on) {
+        overLock = on;
+        if (Build.VERSION.SDK_INT >= 27) { setShowWhenLocked(on); setTurnScreenOn(on); }
+        else {
+            int f = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON;
+            if (on) getWindow().addFlags(f); else getWindow().clearFlags(f);
+        }
+        if (on) getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    /** O aviso fechou (feito, adiado, fechado ou sem resposta): volta ao ecrã de bloqueio, para ninguém ver a app sem desbloquear. */
+    void alertClosed() {
+        runOnUiThread(() -> {
+            AlertState.clear();
+            handler.removeCallbacks(lockTimeout);
+            if (!overLock) return;
+            // dá tempo à voz para dizer «Muito bem!» / «Volto a lembrar…»
+            handler.postDelayed(() -> {
+                if (!overLock) return;
+                showOverLock(false);
+                KeyguardManager km = getSystemService(KeyguardManager.class);
+                if (km != null && km.isKeyguardLocked()) moveTaskToBack(true);
+            }, 2500);
+        });
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (overLock) { handler.removeCallbacks(lockTimeout); showOverLock(false); }
     }
 
     /** Guarda o link de um lembrete partilhado (mamly://add#r=…) até a interface o ir buscar. */

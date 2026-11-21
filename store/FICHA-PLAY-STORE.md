@@ -157,6 +157,10 @@ Questions or ideas: hello@mamly.app
 **Permissões de alarme exato (USE_EXACT_ALARM)**
 - Escolhe: **«Despertador ou calendário / lembretes»**. A função principal da app é tocar avisos a horas exatas.
 
+**Intenções em ecrã inteiro (USE_FULL_SCREEN_INTENT)**
+- Escolhe: **«Despertador»** (a app mostra o aviso por cima do ecrã de bloqueio à hora marcada, como um despertador).
+- Se a Google não aprovar, a app continua a funcionar: no Android 14+ a pessoa ativa «Permitir notificações em ecrã inteiro» (a app mostra um botão para isso) ou desliga a opção nas definições.
+
 **Serviços em primeiro plano (Foreground service – mediaPlayback)**
 - Tipo: **Reprodução de multimédia**
 - Descrição (podes colar):

@@ -13,7 +13,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, lockAlert: true, alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
 
   // ---------- língua ----------
   // 'auto' segue a língua do telemóvel: português se for pt-*, inglês em todas as outras.
@@ -437,7 +437,10 @@
       : !r.once && r.interval ? shortInterval(r.interval) + (r.end ? L(' até às ', ' until ') + hm(r.end) : '') : '';
     $('alertMeta').textContent = left;
   }
-  function hideAlert() { $('alert').hidden = true; current = null; stopListening(); }
+  function hideAlert() {
+    $('alert').hidden = true; current = null; stopListening();
+    if (NATIVE && NATIVE.alertClosed) NATIVE.alertClosed(); // se abriu no ecrã de bloqueio, volta ao bloqueio
+  }
 
   function closeTopLayer() {
     if (!$('alert').hidden) { cancelSpeech(); hideAlert(); return true; }
@@ -875,6 +878,7 @@
     $('sRepeat').value = String(settings.repeat);
     $('sChime').checked = settings.chime;
     $('sListen').checked = settings.listenAfter;
+    $('sLockAlert').checked = settings.lockAlert;
     $('sAlarm').checked = settings.alarmVolume;
     $('sMom').checked = !!settings.momMode;
     $('sListen').disabled = !CAN_LISTEN;
@@ -907,6 +911,7 @@
     settings.repeat = parseInt($('sRepeat').value, 10);
     settings.chime = $('sChime').checked;
     settings.listenAfter = $('sListen').checked;
+    settings.lockAlert = $('sLockAlert').checked;
     settings.alarmVolume = $('sAlarm').checked;
     settings.momMode = $('sMom').checked;
     saveSettings();
@@ -1024,7 +1029,7 @@
       });
       NATIVE.sync(JSON.stringify({
         events,
-        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode, lang: LANG },
+        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode, lang: LANG, lockAlert: settings.lockAlert !== false },
       }));
     }, 200);
   }
@@ -1061,6 +1066,25 @@
     $('fixBattery').hidden = !!st.battery;
     $('fixNotif').hidden = !!st.notifications;
     $('fixAlarm').hidden = !!st.exact;
+    $('fixFullScreen').hidden = st.fullScreen !== false || !settings.lockAlert || !settings.listenAfter;
+  }
+  // O último aviso que tocou no Android: mostra-o e, quando a voz acabar, ouve a resposta
+  // (funciona também quando a app abriu por cima do ecrã de bloqueio, depois de o aviso tocar).
+  let alertHandled = '', alertPoll = 0;
+  function checkNativeAlert() {
+    clearTimeout(alertPoll);
+    if (!NATIVE || !NATIVE.alertState) return;
+    let a = null;
+    try { a = JSON.parse(NATIVE.alertState() || 'null'); } catch (e) {}
+    if (!a || !a.rid) return;
+    const r = reminders.find(x => x.id === a.rid && !x.done);
+    if (!r) return;
+    const key = a.rid + '@' + a.at;
+    if (alertHandled === key) return;
+    if (!current || current.r !== r) { current = { r, kind: a.kind }; showAlert(r, a.kind); }
+    if (!a.spoken) { alertPoll = setTimeout(checkNativeAlert, 600); return; }
+    alertHandled = key;
+    if (settings.listenAfter && !document.hidden) listenForAnswer(r);
   }
   if (NATIVE) {
     window.__native = {
@@ -1081,11 +1105,9 @@
         showAlert(r, kind);
         save(); render();
       },
-      onSpoken(id) {
-        if (current && current.r.id === id && settings.listenAfter && !document.hidden) listenForAnswer(current.r);
-      },
+      onSpoken() { checkNativeAlert(); },
       onActions() { applyNativeActions(); },
-      onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); },
+      onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); },
       onSharedLink() { checkIncomingLink(); },
       onVoiceReady() { updateNativeNotice(); if (settings.nativeVoice) NATIVE.setVoice(settings.nativeVoice); },
       // botão "voltar" do Android: fecha o que estiver aberto; devolve false se não havia nada para fechar
@@ -1103,6 +1125,7 @@
       speak((settings.name ? L('Olá, ', 'Hi, ') + settings.name + '! ' : L('Olá! ', 'Hi! ')) + L('É assim que te vou lembrar das coisas.', "This is how I'll remind you of things."));
     });
     $('sAlarmWrap').hidden = false;
+    $('sLockAlertWrap').hidden = false;
     $('sTestStandby').hidden = false;
     $('diagWrap').hidden = false;
     $('sTestNow').addEventListener('click', () => {
@@ -1116,6 +1139,10 @@
     });
     $('fixNotif').addEventListener('click', () => NATIVE.openNotificationSettings());
     $('fixAlarm').addEventListener('click', () => NATIVE.openAlarmSettings());
+    $('fixFullScreen').addEventListener('click', () => {
+      toast(L('Ativa «Permitir notificações em ecrã inteiro» para o Mamly.', 'Turn on “Allow full screen notifications” for Mamly.'));
+      setTimeout(() => NATIVE.openFullScreenSettings && NATIVE.openFullScreenSettings(), 1200);
+    });
     $('fixVoice').addEventListener('click', () => NATIVE.openVoiceInstall());
     $('fixVoiceSettings').addEventListener('click', () => NATIVE.openTtsSettings());
     $('sTestStandby').addEventListener('click', () => {
@@ -1254,7 +1281,7 @@
     '. A app não tem contas, não tem publicidade e não envia os teus lembretes para lado nenhum.': ". The app has no accounts, no ads, and doesn't send your reminders anywhere.",
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
-    'Testar voz': 'Test voice', 'Testar com ecrã desligado': 'Test with screen off',
+    'Testar voz': 'Test voice', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
     'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram', 'Apoiantes do Mamly': 'Mamly supporters', 'Este espaço pode ser teu': 'This space could be yours', 'Queres apoiar o projeto? Fala connosco.': 'Want to support the project? Get in touch.',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
@@ -1302,6 +1329,7 @@
   } else {
     applyNativeActions();
     updateNativeNotice();
+    checkNativeAlert();
   }
 
   const qs = new URLSearchParams(location.search);

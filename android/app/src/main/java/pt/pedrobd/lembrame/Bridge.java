@@ -105,6 +105,27 @@ public class Bridge {
     @JavascriptInterface
     public String takeActions() { return Store.takeActions(a); }
 
+    /** O último aviso que tocou ({rid, kind, at, spoken}) ou "" se não houver. */
+    @JavascriptInterface
+    public String alertState() { return AlertState.json(); }
+
+    @JavascriptInterface
+    public void alertClosed() { a.alertClosed(); }
+
+    /** Android 14+: autorização para mostrar o aviso no ecrã de bloqueio. */
+    @JavascriptInterface
+    public void openFullScreenSettings() {
+        a.runOnUiThread(() -> {
+            try {
+                if (Build.VERSION.SDK_INT >= 34) {
+                    a.startActivity(new Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:" + a.getPackageName())));
+                    return;
+                }
+            } catch (Exception ignored) {}
+            a.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + a.getPackageName())));
+        });
+    }
+
     @JavascriptInterface
     public void cancelNotification(String rid) { Notif.cancel(a, rid); }
 
@@ -123,6 +144,8 @@ public class Bridge {
             o.put("tts", a.speech.ok());
             o.put("noPortuguese", a.speech.noPortuguese());
             o.put("googleTts", Speech.googleInstalled(a));
+            android.app.NotificationManager nm = a.getSystemService(android.app.NotificationManager.class);
+            o.put("fullScreen", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
         } catch (JSONException ignored) {}
         return o.toString();
     }
