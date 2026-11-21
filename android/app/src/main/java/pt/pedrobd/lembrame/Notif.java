@@ -79,6 +79,9 @@ final class Notif {
                     .putExtra("alert", rid);
             PendingIntent full = PendingIntent.getActivity(c, 4, fi, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             b.setFullScreenIntent(full, true).setCategory(NotificationCompat.CATEGORY_ALARM);
+            boolean allowed = android.os.Build.VERSION.SDK_INT < 34
+                    || c.getSystemService(NotificationManager.class).canUseFullScreenIntent();
+            Store.log(c, allowed ? "Aviso em ecrã inteiro: permitido" : "Aviso em ecrã inteiro: NÃO permitido (falta autorização)");
         }
         try { NotificationManagerCompat.from(c).notify(idFor(rid), b.build()); }
         catch (SecurityException ignored) {}

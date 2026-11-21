@@ -410,8 +410,10 @@
 
   async function listenForAnswer(r) {
     $('alertHint').textContent = L('A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.', 'Listening… say “done”, “snooze 15 minutes” or “delete”.');
-    let text = '';
-    try { text = await listen({ maxMs: 10000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) {}
+    let text = '', err = '';
+    nativeLog(L('A ouvir a resposta…', 'Listening for a reply…'));
+    try { text = await listen({ maxMs: 10000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) { err = e.message || 'erro'; }
+    nativeLog(text ? L('Resposta: «', 'Reply: “') + text + L('»', '”') : L('Sem resposta', 'No reply') + (err ? ' (' + err + ')' : ''));
     $('alertHint').textContent = '';
     if (!text || !current || current.r !== r) return;
     const t = text.toLowerCase();
@@ -1083,8 +1085,10 @@
     if (alertHandled === key) return;
     if (!current || current.r !== r) { current = { r, kind: a.kind }; showAlert(r, a.kind); }
     if (!a.spoken) { alertPoll = setTimeout(checkNativeAlert, 600); return; }
+    if (!settings.listenAfter) { alertHandled = key; return; }
+    if (document.hidden) { nativeLog('Aviso com a app escondida: espero que abra para ouvir'); return; } // ouve quando a app aparecer (onResume)
     alertHandled = key;
-    if (settings.listenAfter && !document.hidden) listenForAnswer(r);
+    listenForAnswer(r);
   }
   if (NATIVE) {
     window.__native = {
