@@ -1210,7 +1210,7 @@
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
     'Testar voz': 'Test voice', 'Testar com ecrã desligado': 'Test with screen off',
-    'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)',
+    'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
     'Lembra-me de hora a hora de ir à InPost até às 16h': 'Remind me every hour to go to the post office until 4pm',
@@ -1232,6 +1232,7 @@
     });
   }
   translateUI();
+  if (EN) { $('contactMail').href = 'mailto:hello@mamly.app'; $('contactMail').textContent = 'hello@mamly.app'; }
   $('sLang').value = settings.lang || 'auto';
   $('sLang').addEventListener('change', () => {
     settings.lang = $('sLang').value; saveSettings();
