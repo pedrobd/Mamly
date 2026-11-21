@@ -33,6 +33,7 @@
     let s = ' ' + String(input || '').toLowerCase().replace(/[“”"]/g, '').replace(/\s+/g, ' ').trim() + ' ';
     s = s.replace(/manha\b/g, 'manhã').replace(/amanha\b/g, 'amanhã');
     // o ditado às vezes come o "a" ("daqui 5 minutos") e as pessoas dizem "uns 5 minutos"
+    s = s.replace(/\sdaqui\s+(?:h[áa]|à)\s+/g, ' daqui a ').replace(/\s(?:dentro de|em)\s+h[áa]\s+/g, ' dentro de '); // "daqui há 5 minutos"
     s = s.replace(/\sdaqui\s+(?=(?:uns|umas|\d|' + ALLNUM + '))/g, ' daqui a ');
     s = s.replace(new RegExp('\\s(?:uns|umas|cerca de|mais ou menos|aproximadamente|sensivelmente)\\s+(?=\\d|(?:' + ALLNUM + ')\\s)', 'g'), ' ');
     s = s.replace(/(\d)\s*m(?=[\s,.!?])/g, '$1 minutos').replace(/(\d)\s*mins?(?=[\s,.!?])/g, '$1 minutos');
@@ -186,7 +187,7 @@
     let t = ' ' + s.replace(/\s+/g, ' ').trim() + ' ';
     t = t.replace(/\s(?:por favor|se faz favor|sff)(?=[\s,.!?])/g, ' ').replace(/^[\s,.;:!?]+/, ' ');
     const lead = [
-      /^\s*(?:diz|dizer|fala|avisa)-?me\s+(?:para|de|que)\s+/,
+      /^\s*(?:diz|dizer|fala|avisa)[- ]?me\s+(?:para|de|que)\s+/,
       /^\s*(?:ok|olá|ola|ei|hey|então|olha|ouve)[,!]?\s+/,
       /^\s*(?:re)?(?:lembra|lembrar|avisa|avisar|recorda|recordar)[- ]?(?:-?me|me)?\s*(?:de que|que|de|para|disto|disso)?\s+/,
       /^\s*(?:eu\s+)?(?:tenho|tens|preciso|precisas)\s+(?:de|que)\s+/,

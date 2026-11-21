@@ -551,6 +551,7 @@
       once: p.once, hasDeadline: p.hasDeadline, createdAt: Date.now(), lastAt: 0, done: false,
       said: text, say: p.say || null, forMs: p.forMs || null,
     };
+    nativeLog(L('Ouvi', 'Heard') + ': «' + text + '» → ' + r.text + ' · ' + (r.once ? hm(r.firstAt) : (r.interval + ' min' + (r.end ? ' → ' + hm(r.end) : ''))));
     reminders.push(r);
     lastCreated = r;
     save(); render();
