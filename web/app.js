@@ -1219,7 +1219,7 @@
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
     'Testar voz': 'Test voice', 'Testar com ecrã desligado': 'Test with screen off',
-    'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram',
+    'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram', 'Apoiantes do Mamly': 'Mamly supporters', 'Este espaço pode ser teu': 'This space could be yours', 'Queres apoiar o projeto? Fala connosco.': 'Want to support the project? Get in touch.',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
     'De 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz': 'Every 30 minutes from 1pm to 5pm remind me to pay the electricity bill',
@@ -1241,7 +1241,7 @@
     });
   }
   translateUI();
-  if (EN) { $('contactMail').href = 'mailto:hello@mamly.app'; $('contactMail').textContent = 'hello@mamly.app'; }
+  if (EN) { $('contactMail').href = 'mailto:hello@mamly.app'; $('contactMail').textContent = 'hello@mamly.app'; $('supportMail').href = 'mailto:hello@mamly.app?subject=Supporting%20Mamly'; }
   $('sLang').value = settings.lang || 'auto';
   $('sLang').addEventListener('change', () => {
     settings.lang = $('sLang').value; saveSettings();

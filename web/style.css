@@ -386,6 +386,13 @@ button { cursor: pointer; }
 .share-when { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
 .share-note { margin: 0; color: var(--muted); font-size: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.support-row {
+  display: grid; gap: 3px; padding: 16px 18px; border-radius: 18px; text-decoration: none; text-align: center; color: var(--ink);
+  border: 2px dashed color-mix(in srgb, var(--accent-2) 55%, transparent); background: var(--accent-soft);
+}
+.support-eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); }
+.support-row b { font-family: var(--display); font-size: 19px; letter-spacing: -.02em; }
+.support-txt { font-size: 14px; color: var(--muted); }
 .social-row {
   display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 18px; text-decoration: none;
   background: var(--bg-2); border: 1px solid var(--line); color: var(--ink);
