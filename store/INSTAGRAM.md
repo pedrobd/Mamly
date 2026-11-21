@@ -175,9 +175,22 @@ Thank you so much 💛
 
 ---
 
+## Destaques
+
+Os destaques são feitos a partir de stories já publicados. Primeiro partilha cada post nos stories e depois cria o destaque:
+**Perfil → Novo (+) → escolhe os stories → nome → Editar capa** (usa as imagens de `store/out/instagram/destaques/`).
+
+| Capa | Nome (curto, para caber) | Stories a juntar |
+|---|---|---|
+| `destaque-1-sobre.png` (ⓘ ameixa) | **Sobre · About** | post 1 + post 4 |
+| `destaque-2-voz.png` (🎙 coral) | **Diz · Say it** | post 2 |
+| `destaque-3-modo-mae.png` (❤ ameixa) | **Mãe · Mom** | post 3 |
+| `destaque-4-testar.png` (📱 amarelo) | **Testar · Test** | post 5 |
+
+---
+
 ## Dicas rápidas
 - **Stories:** partilha cada post nos stories e acrescenta um sticker de link para mamly.app.
-- **Destaques:** cria três: «O que é», «Modo mãe» e «Testar».
 - **Reels** (o que mais cresce): grava o ecrã do telemóvel enquanto dizes um lembrete e ouves a resposta. Bastam 10 a 15 segundos.
 - **Hashtags:** usa 8 a 10 por post, misturando português e inglês. Mais do que isso já não ajuda.
 - **Stories e Reels:** ao contrário dos posts, não dá para fazer carrossel. Usa texto em português com legendas em inglês, ou faz duas versões.
