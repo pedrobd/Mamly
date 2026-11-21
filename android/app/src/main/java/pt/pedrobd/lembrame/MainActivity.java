@@ -179,7 +179,7 @@ public class MainActivity extends Activity {
             return;
         }
         dictation.setLanguage(Lang.speechTag(this));
-        if ("answer".equals(mode)) dictation.start(false, 7000);
+        if ("answer".equals(mode)) dictation.start(false, 10000);
         else dictation.start(true, 0);
     }
 

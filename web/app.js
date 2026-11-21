@@ -411,7 +411,7 @@
   async function listenForAnswer(r) {
     $('alertHint').textContent = L('A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.', 'Listening… say “done”, “snooze 15 minutes” or “delete”.');
     let text = '';
-    try { text = await listen({ maxMs: 7000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) {}
+    try { text = await listen({ maxMs: 10000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) {}
     $('alertHint').textContent = '';
     if (!text || !current || current.r !== r) return;
     const t = text.toLowerCase();
