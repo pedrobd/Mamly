@@ -34,6 +34,8 @@
     let s = ' ' + String(input || '').toLowerCase().replace(/[“”"’]/g, (c) => c === '’' ? "'" : '').replace(/\s+/g, ' ').trim() + ' ';
     s = s.replace(/\b(\d{1,2})\s*a\.?\s?m\.?(?=[\s,.!?])/g, '$1am').replace(/\b(\d{1,2}(?::\d{2})?)\s*p\.?\s?m\.?(?=[\s,.!?])/g, '$1pm')
       .replace(/\b(\d{1,2}:\d{2})\s*a\.?\s?m\.?(?=[\s,.!?])/g, '$1am');
+    s = s.replace(/\sin\s+(?:about|around|roughly|approximately|like|some)\s+(?=\d)/g, ' in ')
+      .replace(/(\d)\s*m(?=[\s,.!?])/g, '$1 minutes').replace(/(\d)\s*mins?(?=[\s,.!?])/g, '$1 minutes');
     s = s.replace(/\b(?:noon|midday)\b/g, '12:00').replace(/\bmidnight\b/g, '23:59');
     s = s.replace(/\bhourly\b/g, 'every 60 minutes').replace(/\bevery other hour\b/g, 'every 120 minutes')
       .replace(/\b(?:a\s+)?half(?:\s+an)?\s+hour\b/g, '30 minutes').replace(/\b(?:a\s+)?quarter(?:\s+of)?(?:\s+an)?\s+hour\b/g, '15 minutes')
@@ -178,7 +180,7 @@
 
   function cleanTask(s) {
     let t = ' ' + s.replace(/\s+/g, ' ').trim() + ' ';
-    t = t.replace(/\s(?:please|pls|plz)(?=[\s,.!?])/g, ' ');
+    t = t.replace(/\s(?:please|pls|plz)(?=[\s,.!?])/g, ' ').replace(/^[\s,.;:!?]+/, ' ');
     const lead = [
       /^\s*(?:ok(?:ay)?|hey|hi|so|um|uh|well)[,!]?\s+/,
       /^\s*(?:can you\s+|could you\s+)?(?:remind|tell|alert|ping|nudge)\s+me\s*(?:to|that|about|of)?\s+/,

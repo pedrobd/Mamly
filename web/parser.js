@@ -32,6 +32,10 @@
   function normalize(input) {
     let s = ' ' + String(input || '').toLowerCase().replace(/[“”"]/g, '').replace(/\s+/g, ' ').trim() + ' ';
     s = s.replace(/manha\b/g, 'manhã').replace(/amanha\b/g, 'amanhã');
+    // o ditado às vezes come o "a" ("daqui 5 minutos") e as pessoas dizem "uns 5 minutos"
+    s = s.replace(/\sdaqui\s+(?=(?:uns|umas|\d|' + ALLNUM + '))/g, ' daqui a ');
+    s = s.replace(new RegExp('\\s(?:uns|umas|cerca de|mais ou menos|aproximadamente|sensivelmente)\\s+(?=\\d|(?:' + ALLNUM + ')\\s)', 'g'), ' ');
+    s = s.replace(/(\d)\s*m(?=[\s,.!?])/g, '$1 minutos').replace(/(\d)\s*mins?(?=[\s,.!?])/g, '$1 minutos');
     s = s.replace(/meio[- ]dia/g, '12h').replace(/meia[- ]noite/g, '23h59');
     s = s.replace(/de meia em meia hora/g, 'a cada 30 minutos')
       .replace(/de quarto em quarto de hora/g, 'a cada 15 minutos')
@@ -180,8 +184,9 @@
 
   function cleanTask(s) {
     let t = ' ' + s.replace(/\s+/g, ' ').trim() + ' ';
-    t = t.replace(/\s(?:por favor|se faz favor|sff)(?=[\s,.!?])/g, ' ');
+    t = t.replace(/\s(?:por favor|se faz favor|sff)(?=[\s,.!?])/g, ' ').replace(/^[\s,.;:!?]+/, ' ');
     const lead = [
+      /^\s*(?:diz|dizer|fala|avisa)-?me\s+(?:para|de|que)\s+/,
       /^\s*(?:ok|olá|ola|ei|hey|então|olha|ouve)[,!]?\s+/,
       /^\s*(?:re)?(?:lembra|lembrar|avisa|avisar|recorda|recordar)[- ]?(?:-?me|me)?\s*(?:de que|que|de|para|disto|disso)?\s+/,
       /^\s*(?:eu\s+)?(?:tenho|tens|preciso|precisas)\s+(?:de|que)\s+/,
