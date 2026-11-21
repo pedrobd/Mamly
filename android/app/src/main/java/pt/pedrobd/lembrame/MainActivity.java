@@ -141,9 +141,21 @@ public class MainActivity extends Activity {
         if (i == null || i.getStringExtra("alert") == null) return;
         i.removeExtra("alert");
         showOverLock(true);
+        wakeScreen();
         handler.removeCallbacks(lockTimeout);
         handler.postDelayed(lockTimeout, 90_000); // se ninguém responder, volta ao ecrã de bloqueio
         Store.log(this, "Aviso aberto no ecrã de bloqueio");
+    }
+
+    @SuppressWarnings("deprecation")
+    private void wakeScreen() {
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+            if (pm == null || pm.isInteractive()) return;
+            android.os.PowerManager.WakeLock wl = pm.newWakeLock(android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK
+                    | android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP | android.os.PowerManager.ON_AFTER_RELEASE, "lembrame:alert");
+            wl.acquire(10_000);
+        } catch (Exception e) { Store.log(this, "Não consegui acender o ecrã: " + e.getMessage()); }
     }
 
     private void showOverLock(boolean on) {
@@ -173,11 +185,8 @@ public class MainActivity extends Activity {
         });
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        if (overLock) { handler.removeCallbacks(lockTimeout); showOverLock(false); }
-    }
+    // Nota: o modo "por cima do bloqueio" não se desliga no onStop. Com o ecrã apagado, o Android pára a
+    // atividade logo a seguir a abri-la; desligar aí impedia o ecrã de acender. Sai em alertClosed() ou ao fim de 90 s.
 
     /** Guarda o link de um lembrete partilhado (mamly://add#r=…) até a interface o ir buscar. */
     private boolean captureSharedLink(Intent intent) {
