@@ -7,10 +7,10 @@
   <meta name="description" content="Alguém partilhou um lembrete contigo no Mamly.">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#330A2A">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="app/icon.svg" type="image/svg+xml">
   <style>
-    @font-face { font-family: "Bricolage Grotesque"; src: url("fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
-    @font-face { font-family: "Manrope"; src: url("fonts/manrope.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+    @font-face { font-family: "Bricolage Grotesque"; src: url("app/fonts/bricolage-grotesque.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+    @font-face { font-family: "Manrope"; src: url("app/fonts/manrope.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
     :root { --bg: #FCFBF6; --card: #fff; --ink: #330A2A; --ink-2: #5E3A55; --muted: #7D6476; --line: #EDE3E3; --coral: #FD726B; --sun: #FBD270; color-scheme: light; }
     @media (prefers-color-scheme: dark) { :root { --bg: #1A0D17; --card: #2D1828; --ink: #FCF3F0; --ink-2: #E2CDD8; --muted: #A9909F; --line: #42283A; color-scheme: dark; } }
     * { box-sizing: border-box; }
@@ -34,7 +34,7 @@
 </head>
 <body>
   <main>
-    <img class="logo" src="icon.svg" alt="Mamly">
+    <img class="logo" src="app/icon.svg" alt="Mamly">
     <h1 id="title">Recebeste um lembrete</h1>
     <div class="card" id="card" hidden>
       <p class="task" id="task"></p>
@@ -46,7 +46,7 @@
       <a class="btn primary" id="open" href="#">Abrir no Mamly</a>
       <p class="note" id="noAppNote" hidden>Parece que ainda não tens o Mamly. Instala-o e volta a tocar no link.</p>
       <a class="btn ghost" id="install" href="https://github.com/pedrobd/mamly/releases/download/mamly/Mamly.apk">Instalar o Mamly (Android)</a>
-      <a class="btn ghost" id="web" href="./">Usar a versão web</a>
+      <a class="btn ghost" id="web" href="app/">Usar a versão web</a>
       <p class="note">O lembrete vai dentro do próprio link: não passa por nenhum servidor.</p>
     </div>
   </main>
@@ -82,7 +82,7 @@
       var here = location.href.split('#')[0].split('?')[0];
       var fallback = here + '?semapp=1#r=' + payload;
       var android = /Android/i.test(navigator.userAgent);
-      document.getElementById('web').href = './#r=' + payload;
+      document.getElementById('web').href = 'app/#r=' + payload;
       if (android) {
         document.getElementById('open').href = 'intent://add?r=' + payload + '#Intent;scheme=mamly;package=pt.pedrobd.lembrame;S.browser_fallback_url=' + encodeURIComponent(fallback) + ';end';
       } else {
