@@ -1,7 +1,7 @@
 # Mamly
 
 Lembretes **falados** para quem se esquece de tudo (feito a pensar em PHDA).
-Dizes ao microfone o que tens de fazer — *"lembra-me de hora a hora de ir à InPost até às 16h"* — e a app
+Dizes ao microfone o que tens de fazer — *"de 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz"* — e a app
 lembra-te em voz alta à hora certa, mesmo com o telemóvel bloqueado.
 
 ## Instalar (Android)

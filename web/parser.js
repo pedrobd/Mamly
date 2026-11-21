@@ -1,5 +1,6 @@
 /* Percebe frases em português como
  *   "lembra-me de hora a hora de ir à InPost até às 16h"
+ *   "de 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz"
  *   "às 3 e meia da tarde ligar à mãe"
  *   "daqui a 20 minutos tirar a roupa da máquina"
  * e devolve { task, interval, firstAt, end, once, hasDeadline }.
@@ -106,6 +107,7 @@
     const pm = s.match(/\s(?:de|à|a|durante a|logo à|pela)\s+(manhã|tarde|noite)(?=[\s,.!?])/);
     if (pm) period = period || pm[1];
 
+    const range = cut(new RegExp('\\s(?:d[ae]s?|entre\\s+[àa]s?|entre)\\s+' + TIME + '\\s+(?:at[ée]\\s+)?(?:[àa]s?|e\\s+[àa]s?|e)\\s+' + TIME));
     const deadline = cut(new RegExp('\\s(?:no máximo\\s+)?(?:at[ée]|antes)(?:\\s+(?:d?[àa]s?|ao|aos|de))?\\s+' + TIME));
     const startM = cut(new RegExp('\\s(?:a partir d[ae]s?|desde\\s+[àa]s|come[çc]a(?:ndo|r)?\\s+[àa]s)\\s+' + TIME));
     const rel = cut(/\s(?:daqui a|dentro de|em)\s+(\d+)\s*(segundos?|seg|minutos?|min|horas?|h)(?=[\s,.!?])/);
@@ -126,9 +128,25 @@
     };
     const atHour = (h) => { const d = new Date(base); d.setHours(h, 0, 0, 0); return d.getTime(); };
 
+
+    // "das 13h às 17h": janela com início e fim no mesmo dia (sem ser prazo)
+    let rStart = null, rEnd = null;
+    if (range) {
+      const a = timeFrom(range.slice(0, 5 + 1), period), b = timeFrom([null].concat(range.slice(5 + 1, 2 * 5 + 1)), period);
+      if (a && b) {
+        const raw = (hm) => { const d = new Date(base); d.setHours(hm.h, hm.m, 0, 0); return d.getTime(); };
+        rStart = raw(a); rEnd = raw(b);
+        if (rEnd <= rStart) rEnd += 24 * 3600e3;            // "das 22h às 2h"
+        if (dayOffset === 0 && rEnd <= now) { rStart += 24 * 3600e3; rEnd += 24 * 3600e3; } // já passou: amanhã
+        if (rStart <= now) rStart = null;                    // já começou: avisa a partir de agora
+        if (!interval) interval = defaultInterval;
+      }
+    }
+
     let end = deadline ? mk(timeFrom(deadline, period)) : null;
     const hasDeadline = end != null;
-    let start = startM ? mk(timeFrom(startM, period)) : null;
+    if (!end && rEnd) end = rEnd;
+    let start = startM ? mk(timeFrom(startM, period)) : rStart;
     let atT = at ? mk(timeFrom(at, period)) : null;
     if (rel) atT = now + toMin(parseInt(rel[1], 10), rel[2]) * 60e3;
     if (!start && atT && interval) { start = atT; atT = null; }

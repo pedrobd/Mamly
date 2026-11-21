@@ -947,13 +947,13 @@
   $('settingsForm').addEventListener('change', readSettings);
   $('sMom').addEventListener('change', () => {
     readSettings(); unlock(); render();
-    if (settings.momMode) speak(message({ text: L('Ir à InPost', 'Go to the post office'), hasDeadline: true, end: Date.now() + 55 * MIN }, 'regular'));
+    if (settings.momMode) speak(message({ text: L('Pagar a conta da luz', 'Pay the electricity bill'), hasDeadline: true, end: Date.now() + 55 * MIN }, 'regular'));
     else speak(L('Modo mãe desligado.', 'Mom mode off.'));
   });
   $('settingsDlg').addEventListener('close', readSettings);
   $('sTest').addEventListener('click', () => {
     readSettings(); unlock();
-    speak(message({ text: L('Ir à InPost', 'Go to the post office'), hasDeadline: true, end: Date.now() + 130 * MIN }, 'regular'));
+    speak(message({ text: L('Pagar a conta da luz', 'Pay the electricity bill'), hasDeadline: true, end: Date.now() + 130 * MIN }, 'regular'));
   });
 
   $('keepAwake').addEventListener('click', () => setAwake(!wantAwake));
@@ -1183,7 +1183,7 @@
     'Ecrã ligado': 'Screen on', 'A seguir': 'Up next', 'Hoje e a seguir': 'Today and next',
     'A tua cabeça fica livre.': 'Free your mind.',
     'Carrega no microfone e diz o que não te podes esquecer. Eu lembro-te em voz alta.': "Tap the microphone and say what you can't forget. I'll remind you out loud.",
-    '“De hora a hora ir à InPost até às 16h”': '“Every hour go to the post office until 4pm”',
+    '“De 30 em 30 min, das 13h às 17h, pagar a luz”': '“Every 30 min, 1pm to 5pm, pay the electric bill”',
     '“Daqui a 20 min tirar a roupa”': '“In 20 minutes take out the laundry”',
     '“Amanhã às 9 ligar ao dentista”': '“Tomorrow at 9 call the dentist”',
     'Feitos': 'Done', 'Limpar feitos': 'Clear done',
@@ -1216,7 +1216,7 @@
     'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
-    'Lembra-me de hora a hora de ir à InPost até às 16h': 'Remind me every hour to go to the post office until 4pm',
+    'De 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz': 'Every 30 minutes from 1pm to 5pm remind me to pay the electricity bill',
     'Daqui a 20 minutos tirar a roupa da máquina': 'In 20 minutes take out the laundry', 'Amanhã às 9 ligar ao dentista': 'Tomorrow at 9 call the dentist',
     'Fechar e voltar à lista': 'Close and go back to the list', 'Ex.: às 15h ligar à mãe': 'E.g. at 3pm call mom', 'Escrever lembrete': 'Type a reminder',
     'Adicionar': 'Add', 'Escrever em vez de falar': 'Type instead of talking', 'Falar um lembrete': 'Speak a reminder',

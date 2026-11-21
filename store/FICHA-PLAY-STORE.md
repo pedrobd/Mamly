@@ -35,7 +35,7 @@ Esqueces-te das coisas assim que pousas o telemóvel? O Mamly foi pensado para c
 
 🗣️ DIZ, NÃO ESCREVAS
 Carrega no microfone e fala naturalmente:
-• «Hoje tenho de ir à InPost à tarde até às 16h»
+• «De 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz»
 • «Lembra-me de beber água de meia em meia hora até às 22h»
 • «Daqui a 20 minutos tira a roupa da máquina»
 O Mamly percebe a hora, a repetição e até quando deves parar.
@@ -84,7 +84,7 @@ Forget things the moment you put your phone down? Mamly was made for ADHD brains
 
 🗣️ SAY IT, DON'T TYPE IT
 Tap the mic and talk naturally:
-• "I need to go to the post office this afternoon, by 4pm"
+• "Every 30 minutes from 1pm to 5pm remind me to pay the electricity bill"
 • "Remind me to drink water every half hour until 10pm"
 • "In 20 minutes, take the laundry out"
 Mamly understands the time, how often to repeat and when to stop.
