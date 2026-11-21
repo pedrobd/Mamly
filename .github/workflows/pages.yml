@@ -1,6 +1,6 @@
 name: Site (versão web + links partilhados)
 
-# Publica a pasta web/ em https://pedrobd.github.io/mamly/
+# Publica a pasta web/ em https://pedrobd.github.io/Mamly/
 # (a versão web da app, add.html para os lembretes partilhados e downloads.html).
 # Requer: Settings → Pages → Source: "GitHub Actions".
 on:
