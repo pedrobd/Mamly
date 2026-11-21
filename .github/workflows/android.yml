@@ -81,12 +81,7 @@ jobs:
           if [ -z "$carried" ] && [ -f .github/downloads-base.txt ]; then carried=$(tr -dc '0-9' < .github/downloads-base.txt); fi
           PREV_DOWNLOADS=$(( cur + ${carried:-0} ))
           echo "Downloads acumulados até agora: $PREV_DOWNLOADS"
-          gh release delete mamly --yes --cleanup-tag || true
-          gh release create mamly Mamly.apk \
-            --target "$GITHUB_SHA" \
-            --prerelease \
-            --title "Mamly (app Android)" \
-            --notes "Lembretes falados que tocam mesmo com o ecrã desligado. Descarrega Mamly.apk no telemóvel e instala.
+          NOTES="Lembretes falados que tocam mesmo com o ecrã desligado. Descarrega Mamly.apk no telemóvel e instala.
 
           Versão do commit ${GITHUB_SHA::7}.
 
@@ -95,9 +90,21 @@ jobs:
           - Certificado de assinatura (SHA-256): 95:BC:23:51:60:D6:DA:36:85:D5:D7:15:31:9C:FC:53:EF:D1:96:0E:F0:DD:E0:5D:C6:58:17:D3:79:4F:C0:B1
 
           Downloads de versões anteriores: ${PREV_DOWNLOADS}"
-          # garante que fica publicado (não rascunho) e que o link responde
-          gh release edit mamly --draft=false --prerelease
+          # Rascunhos perdidos (de execuções antigas) são apagados; o lançamento publicado nunca é apagado,
+          # só se troca o ficheiro (apagar e recriar a etiqueta deixava o lançamento em rascunho → link 404).
+          for id in $(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=50" --jq '.[] | select(.draft) | .id'); do
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/releases/$id" && echo "rascunho $id apagado"
+          done
+          if gh api "repos/${GITHUB_REPOSITORY}/releases/tags/mamly" >/dev/null 2>&1; then
+            gh release upload mamly Mamly.apk --clobber
+            gh release edit mamly --prerelease --title "Mamly (app Android)" --notes "$NOTES"
+          else
+            git tag -f mamly "$GITHUB_SHA" && git push -f origin refs/tags/mamly
+            gh release create mamly Mamly.apk --verify-tag --prerelease --title "Mamly (app Android)" --notes "$NOTES"
+          fi
+          ok=""
           for i in 1 2 3 4 5 6; do
             code=$(curl -s -o /dev/null -w "%{http_code}" -L "https://github.com/${GITHUB_REPOSITORY}/releases/download/mamly/Mamly.apk")
-            echo "link do APK: $code"; [ "$code" = 200 ] && break; sleep 10
+            echo "link do APK: $code"; [ "$code" = 200 ] && ok=1 && break; sleep 10
           done
+          [ -n "$ok" ] || { echo "::error::O link do APK não responde"; exit 1; }
