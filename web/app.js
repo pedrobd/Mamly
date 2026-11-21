@@ -594,15 +594,17 @@
     micBusy = true;
     $('mic').classList.add('listening');
     $('micLabel').textContent = L('Toca para terminar', 'Tap to finish');
+    clearTimeout(transcriptTimer);
     $('transcript').textContent = '';
     try {
       const text = await listen({ onInterim: (t) => { $('transcript').textContent = '“' + t + '”'; } });
       $('mic').classList.remove('listening');
       $('micLabel').textContent = L('Toca e fala', 'Tap and talk');
       micBusy = false;
-      if (!text) { $('transcript').textContent = L('Não ouvi nada. Tenta outra vez.', "I didn't hear anything. Try again."); return; }
+      if (!text) { $('transcript').textContent = L('Não ouvi nada. Tenta outra vez.', "I didn't hear anything. Try again."); hideTranscriptSoon(); return; }
       $('transcript').textContent = '“' + text + '”';
       await handleInput(text);
+      hideTranscriptSoon();
     } catch (e) {
       micBusy = false;
       $('mic').classList.remove('listening');
@@ -612,7 +614,14 @@
                   : L('Tens de dar autorização ao microfone (no cadeado ao lado do endereço).', 'Allow the microphone (padlock next to the address).'))
         : e.message === 'network' ? L('O reconhecimento de voz precisa de internet.', 'Speech recognition needs internet.') : L('Não consegui ouvir. Tenta outra vez ou escreve.', "I couldn't hear you. Try again or type.");
       $('transcript').textContent = msg;
+      hideTranscriptSoon(8000);
     }
+  }
+  // o texto ouvido fica uns segundos (para confirmares) e depois sai sozinho
+  let transcriptTimer = 0;
+  function hideTranscriptSoon(ms) {
+    clearTimeout(transcriptTimer);
+    transcriptTimer = setTimeout(() => { if (!micBusy) $('transcript').textContent = ''; }, ms || 4000);
   }
 
   // ---------- desenhar ----------
