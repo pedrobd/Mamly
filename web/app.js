@@ -1087,7 +1087,7 @@
 
   // ---------- partilhar lembretes por link ----------
   // O lembrete vai dentro do próprio link, depois do "#": essa parte nunca é enviada a nenhum servidor.
-  const SHARE_BASE = 'https://pedrobd.github.io/Mamly/add.html';
+  const SHARE_BASE = 'https://mamly.app/add.html';
   const b64url = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   const unb64url = (str) => decodeURIComponent(escape(atob(str.replace(/-/g, '+').replace(/_/g, '/'))));
   function shareLink(r) {

@@ -1,6 +1,6 @@
 name: Site (versão web + links partilhados)
 
-# Publica o site em https://pedrobd.github.io/Mamly/ (mais tarde https://mamly.app/):
+# Publica o site em https://mamly.app/ (domínio configurado em Settings → Pages → Custom domain):
 #   /              landing page (site/)
 #   /app/          versão web da app (web/)
 #   /add.html      página dos lembretes partilhados
