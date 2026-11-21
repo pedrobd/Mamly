@@ -46,10 +46,21 @@ section { max-width: 1120px; margin: 0 auto; padding: 72px 20px; }
   .brand img { width: 46px; height: 46px; border-radius: 13px; }
   .brand svg { height: 28px; }
 }
+.lang-switch {
+  display: grid; place-items: center; min-width: 44px; height: 42px; padding: 0 12px; border-radius: 999px;
+  border: 1.5px solid var(--line); color: var(--ink); font-weight: 800; font-size: 14px; letter-spacing: .04em; text-decoration: none;
+}
+.lang-switch:hover { border-color: var(--ink); }
+.lang-switch { margin-left: auto; }
+.nav-links + .lang-switch { margin-left: 4px; }   /* no computador, os links do menu já empurram para a direita */
 .nav-links { display: flex; gap: 22px; margin-left: auto; font-weight: 600; font-size: 15px; }
 .nav-links a { text-decoration: none; color: var(--ink-2); }
 .nav-links a:hover { color: var(--ink); }
-@media (max-width: 820px) { .nav-links { display: none; } .nav .btn-small { margin-left: auto; } }
+@media (max-width: 820px) {
+  .nav-links { display: none; }
+  .nav .lang-switch { margin-left: auto; }
+  .nav .btn-small { margin-left: 0; }
+}
 
 /* botões */
 .btn {

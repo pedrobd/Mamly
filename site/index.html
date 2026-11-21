@@ -9,6 +9,16 @@
   <meta name="theme-color" content="#1A0D17" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="app/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="app/icon-512.png">
+  <link rel="alternate" hreflang="pt" href="./">
+  <link rel="alternate" hreflang="en" href="en/">
+  <script>
+    // Quem tem o browser noutra língua vai para a versão inglesa (a não ser que tenha escolhido português)
+    (function () {
+      var pref = null; try { pref = localStorage.getItem('mamly.site.lang'); } catch (e) {}
+      var lang = (navigator.language || 'pt').toLowerCase();
+      if (pref === 'en' || (!pref && lang.indexOf('pt') !== 0)) location.replace('en/' + location.hash);
+    })();
+  </script>
   <meta property="og:type" content="website">
   <meta property="og:title" content="Mamly — a mãe que te lembra de tudo, em voz alta">
   <meta property="og:description" content="Dizes o que tens de fazer. O Mamly lembra-te em voz alta, à hora certa — mesmo com o telemóvel bloqueado.">
@@ -29,6 +39,7 @@
       <a href="#funcionalidades">Funcionalidades</a>
       <a href="#perguntas">Perguntas</a>
     </nav>
+    <a class="lang-switch" href="en/" data-lang="en" hreflang="en" lang="en" title="View in English">EN</a>
     <a class="btn btn-small" href="#instalar">Instalar</a>
   </header>
 
@@ -164,7 +175,7 @@
 
   <footer class="footer">
     <p>© 2026 Mamly · Feito em Portugal 💛</p>
-    <p><a href="privacidade.html">Privacidade</a> · <a href="https://github.com/pedrobd/mamly">GitHub</a></p>
+    <p><a href="privacidade.html">Privacidade</a> · <a href="en/" data-lang="en" hreflang="en" lang="en">English</a> · <a href="https://github.com/pedrobd/mamly">GitHub</a></p>
   </footer>
 
   <script>
@@ -177,6 +188,10 @@
     } else {
       play.addEventListener('click', function (e) { e.preventDefault(); });
     }
+    // memoriza a língua escolhida no botão PT/EN
+    document.querySelectorAll('[data-lang]').forEach(function (a) {
+      a.addEventListener('click', function () { try { localStorage.setItem('mamly.site.lang', a.dataset.lang); } catch (e) {} });
+    });
   </script>
 </body>
 </html>
