@@ -433,7 +433,8 @@
     $('alert').scrollTop = 0;
     $('alertKicker').textContent = (EN ? { final: 'Last call', deadline: "Time's up", snooze: 'Again', once: "It's time" } : { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Outra vez', once: 'Está na hora' })[kind] || L('Lembrete', 'Reminder');
     $('alertTask').textContent = r.text;
-    const left = r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left') : '';
+    const left = r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left')
+      : !r.once && r.interval ? shortInterval(r.interval) + (r.end ? L(' até às ', ' until ') + hm(r.end) : '') : '';
     $('alertMeta').textContent = left;
   }
   function hideAlert() { $('alert').hidden = true; current = null; stopListening(); }

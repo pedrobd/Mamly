@@ -25,7 +25,7 @@ const posts = {
   '1-apresentacao': `<div class="p" style="background:${C.cream};color:${C.plum}">
     <h1 style="font-size:120px">A mãe que te<br>lembra de tudo.<br><span class="hl">Em voz alta.</span></h1>
     <p style="font-size:38px;color:${C.ink2};margin:40px 0 0;max-width:440px;line-height:1.35">Lembretes falados, mesmo com o telemóvel bloqueado.</p>
-    <div class="phone" style="right:-60px;top:660px;width:470px"><img src="${u('site/img/ecra-aviso.png')}"></div>
+    <div class="phone" style="right:72px;top:640px;width:430px"><img src="${u('site/img/ecra-aviso.png')}"></div>
     ${brand(C.plum)}</div>`,
   '2-diz-nao-escrevas': `<div class="p" style="background:${C.coralSoft};color:${C.plum}">
     <h1 style="font-size:104px">Diz.<br><span class="hl">Não escrevas.</span></h1>
