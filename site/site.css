@@ -35,12 +35,17 @@ section { max-width: 1120px; margin: 0 auto; padding: 72px 20px; }
 /* navegação */
 .nav {
   position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 16px;
-  max-width: 1160px; margin: 0 auto; padding: 14px 20px;
+  max-width: 1160px; margin: 0 auto; padding: 16px 20px;
   background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
 }
-.brand { display: flex; align-items: center; gap: 9px; text-decoration: none; color: var(--ink); }
-.brand img { width: 36px; height: 36px; border-radius: 10px; }
-.brand svg { height: 22px; width: auto; }
+.brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+.brand img { width: 52px; height: 52px; border-radius: 15px; box-shadow: 0 6px 16px -8px rgba(51,10,42,.45); }
+.brand svg { height: 32px; width: auto; }
+@media (max-width: 600px) {
+  .brand { gap: 10px; }
+  .brand img { width: 46px; height: 46px; border-radius: 13px; }
+  .brand svg { height: 28px; }
+}
 .nav-links { display: flex; gap: 22px; margin-left: auto; font-weight: 600; font-size: 15px; }
 .nav-links a { text-decoration: none; color: var(--ink-2); }
 .nav-links a:hover { color: var(--ink); }
