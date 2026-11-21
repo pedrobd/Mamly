@@ -386,6 +386,30 @@ button { cursor: pointer; }
 .share-when { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
 .share-note { margin: 0; color: var(--muted); font-size: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* apoiantes */
+.sp-strip { margin: 26px auto 6px; text-align: center; color: var(--muted); }
+.sp-strip small, .sp-empty small { display: block; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; opacity: .85; }
+.sp-strip a { display: inline-flex; opacity: .8; }
+.sp-empty { margin: 22px auto 0; padding-top: 18px; border-top: 1px solid var(--line); text-align: center; color: var(--muted); font-size: 13px; max-width: 300px; }
+.sp-empty a { display: inline-flex; margin-top: 4px; opacity: .85; }
+.sp-logo { display: block; height: 28px; max-width: 170px; width: auto; object-fit: contain; }
+.sp-wall { display: grid; gap: 12px; padding: 16px 18px; border-radius: 18px; background: var(--bg-2); border: 1px solid var(--line); }
+.sp-wall h4 { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-2); text-align: center; }
+.sp-main { display: grid; place-items: center; gap: 6px; padding: 16px 14px; border-radius: 14px; background: var(--card); text-decoration: none; }
+.sp-main .sp-logo { height: 36px; max-width: 220px; }
+.sp-main span { font-size: 12px; color: var(--muted); }
+.sp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sp-grid a { display: grid; place-items: center; padding: 10px 6px; border-radius: 12px; background: var(--card); }
+.sp-grid .sp-logo { height: 22px; max-width: 100%; }
+.sp-cta { margin: 0; text-align: center; font-size: 13px; color: var(--muted); }
+.sp-cta a { color: var(--accent-2); font-weight: 700; text-decoration: none; }
+@media (prefers-color-scheme: dark) {
+  /* logo sem versão para fundo escuro: mostra-o num fundo claro */
+  .sp-logo.sp-nodark { background: #fff; padding: 5px 10px; border-radius: 10px; box-sizing: content-box; }
+  .sp-grid a:has(.sp-nodark), .sp-main:has(.sp-nodark) { background: #fff; }
+  .sp-grid .sp-logo.sp-nodark, .sp-main .sp-logo.sp-nodark { padding: 0; background: none; }
+  .sp-main:has(.sp-nodark) span { color: #7D6476; }
+}
 .support-row {
   display: grid; gap: 3px; padding: 16px 18px; border-radius: 18px; text-decoration: none; text-align: center; color: var(--ink);
   border: 2px dashed color-mix(in srgb, var(--accent-2) 55%, transparent); background: var(--accent-soft);

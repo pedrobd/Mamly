@@ -627,6 +627,32 @@
   };
   const shortInterval = (min) => EN ? cap(sayInterval(min)) : min < 1 ? 'De ' + Math.round(min * 60) + ' em ' + Math.round(min * 60) + ' s' : min === 1 ? 'De minuto a minuto' : min === 60 ? 'De hora a hora' : min === 30 ? 'De meia em meia hora' : min % 60 === 0 ? 'De ' + (min / 60) + ' em ' + (min / 60) + ' h' : 'De ' + min + ' em ' + min + ' min';
 
+  // ---------- apoiantes (web/supporters.js) ----------
+  const SUP = window.MAMLY_SUPPORTERS || {};
+  const supOk = (s) => s && s.name && s.logo && /^https?:\/\//.test(s.url || '');
+  const supMain = supOk(SUP.main) ? SUP.main : null;
+  const supOthers = (SUP.others || []).filter(supOk);
+  const supLogo = (s) => (s.logoDark ? '<picture><source srcset="' + esc(s.logoDark) + '" media="(prefers-color-scheme: dark)">' : '')
+    + '<img class="sp-logo' + (s.logoDark ? '' : ' sp-nodark') + '" src="' + esc(s.logo) + '" alt="' + esc(s.name) + '">' + (s.logoDark ? '</picture>' : '');
+  const supLink = (s, inner, cls) => '<a' + (cls ? ' class="' + cls + '"' : '') + ' href="' + esc(s.url) + '" target="_blank" rel="noopener sponsored">' + inner + '</a>';
+  function renderSupporters(openCount) {
+    $('spStrip').hidden = !supMain || openCount === 0;
+    $('spEmpty').hidden = !supMain;
+    if (!supMain) return;
+    $('spStrip').innerHTML = '<small>' + L('Com o apoio de', 'Supported by') + '</small>' + supLink(supMain, supLogo(supMain));
+    $('spEmpty').innerHTML = L('Este momento de calma é oferecido por', 'This calm moment is brought to you by') + '<br>' + supLink(supMain, supLogo(supMain));
+  }
+  function renderSupportWall() {
+    if (!supMain && !supOthers.length) return; // fica o cartão «Este espaço pode ser teu»
+    const mail = EN ? 'mailto:hello@mamly.app?subject=Supporting%20Mamly' : 'mailto:ola@mamly.app?subject=Quero%20apoiar%20o%20Mamly';
+    $('spWall').innerHTML = '<h4>' + L('Apoiantes do Mamly', 'Mamly supporters') + ' 💛</h4>'
+      + (supMain ? supLink(supMain, supLogo(supMain) + '<span>' + L('Apoiante principal', 'Main supporter') + '</span>', 'sp-main') : '')
+      + (supOthers.length ? '<div class="sp-grid">' + supOthers.map(s => supLink(s, supLogo(s))).join('') + '</div>' : '')
+      + '<p class="sp-cta">' + L('Queres aparecer aqui?', 'Want to be here?') + ' <a href="' + mail + '">' + L('Fala connosco', 'Get in touch') + '</a></p>';
+    $('spWall').hidden = false;
+    $('supportMail').hidden = true;
+  }
+
   function render() {
     const open = reminders.filter(r => !r.done).sort((a, b) => {
       const na = nextEvent(a), nb = nextEvent(b);
@@ -635,6 +661,7 @@
     const done = reminders.filter(r => r.done).sort((a, b) => b.doneAt - a.doneAt);
     $('list').innerHTML = open.map(itemHTML).join('');
     $('empty').hidden = open.length > 0;
+    renderSupporters(open.length);
     $('count').textContent = open.length ? String(open.length) : '';
     $('doneWrap').hidden = done.length === 0;
     $('doneCount').textContent = String(done.length);
@@ -1242,6 +1269,7 @@
   }
   translateUI();
   if (EN) { $('contactMail').href = 'mailto:hello@mamly.app'; $('contactMail').textContent = 'hello@mamly.app'; $('supportMail').href = 'mailto:hello@mamly.app?subject=Supporting%20Mamly'; }
+  renderSupportWall();
   $('sLang').value = settings.lang || 'auto';
   $('sLang').addEventListener('change', () => {
     settings.lang = $('sLang').value; saveSettings();

@@ -78,6 +78,7 @@
           <button class="example" data-example="Daqui a 20 minutos tirar a roupa da máquina">“Daqui a 20 min tirar a roupa”</button>
           <button class="example" data-example="Amanhã às 9 ligar ao dentista">“Amanhã às 9 ligar ao dentista”</button>
         </div>
+        <div id="spEmpty" class="sp-empty" hidden></div>
       </div>
 
       <details id="doneWrap" class="done-wrap" hidden>
@@ -86,6 +87,8 @@
         <button id="clearDone" class="link-btn">Limpar feitos</button>
       </details>
     </section>
+
+    <div id="spStrip" class="sp-strip" hidden></div>
 
     <section id="notice" class="notice">
       <p id="noticeText"><b>Deixa esta página aberta.</b> Os avisos tocam enquanto a página estiver aberta (pode estar noutro separador ou com o ecrã ligado). Se fechares o browser, não toca.</p>
@@ -276,6 +279,7 @@
         <button type="button" class="btn btn-primary" id="sTestNow">Testar agora (fala daqui a 10 s)</button>
         <pre id="diagLog" class="diag-log"></pre>
       </div>
+      <div id="spWall" class="sp-wall" hidden></div>
       <a class="support-row" id="supportMail" href="mailto:ola@mamly.app?subject=Quero%20apoiar%20o%20Mamly">
         <span class="support-eyebrow">Apoiantes do Mamly</span>
         <b>Este espaço pode ser teu</b>
@@ -303,6 +307,7 @@
     </form>
   </dialog>
 
+  <script src="supporters.js"></script>
   <script src="parser.js"></script>
   <script src="parser-en.js"></script>
   <script src="app.js"></script>

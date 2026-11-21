@@ -10,8 +10,8 @@ android {
         applicationId 'pt.pedrobd.lembrame'
         minSdk 26
         targetSdk 36
-        versionCode 25
-        versionName '3.4'
+        versionCode 26
+        versionName '3.5'
     }
 
     // A chave de assinatura não está no repositório em claro: o GitHub Actions desencripta
@@ -50,7 +50,7 @@ dependencies {
 // A interface é a mesma da versão web (pasta web/ na raiz do repositório).
 tasks.register('copyWebApp', Copy) {
     from "$rootDir/../web"
-    include '*.html', '*.js', '*.css', '*.svg', 'fonts/*.woff2'
+    include '*.html', '*.js', '*.css', '*.svg', 'fonts/*.woff2', 'supporters/*'
     exclude 'sw.js', 'downloads.html', 'add.html'
     into "$buildDir/generated/webassets/www"
 }

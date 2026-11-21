@@ -135,6 +135,7 @@ Questions or ideas: hello@mamly.app
 **Acesso à app:** «Todas as funcionalidades estão disponíveis sem acesso especial» (não há login).
 
 **Anúncios:** «Não, a minha app não contém anúncios».
+- ⚠️ Quando entrar o primeiro apoiante (logo em `web/supporters.js`), muda para **«Sim, a minha app contém anúncios»** e atualiza a política de privacidade (secção 1 e resumo). A segurança dos dados continua igual: não há SDK de anúncios nem recolha de dados.
 
 **Classificação de conteúdo** (questionário)
 - Email: ola@mamly.app
