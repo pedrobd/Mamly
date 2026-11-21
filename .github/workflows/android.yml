@@ -42,10 +42,13 @@ jobs:
             -in android/app/release.keystore.enc -out android/app/release.keystore \
             -pass env:KEYSTORE_PASSWORD
 
-      - name: Compilar o APK
+      - name: Instalar o Android 16 (API 36) no SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+
+      - name: Compilar o APK e o AAB (formato da Play Store)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-        run: gradle -p android assembleRelease --no-daemon --stacktrace
+        run: gradle -p android assembleRelease bundleRelease --no-daemon --stacktrace
 
       - name: Preparar ficheiro
         run: |
@@ -57,6 +60,12 @@ jobs:
         with:
           name: Mamly-apk
           path: Mamly.apk
+
+      # O .aab é o ficheiro que se carrega na Play Console (Actions → esta execução → Artifacts)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Mamly-aab-play-store
+          path: android/app/build/outputs/bundle/release/app-release.aab
 
       # Link fixo para descarregar no telemóvel:
       # https://github.com/<dono>/<repo>/releases/download/mamly/Mamly.apk

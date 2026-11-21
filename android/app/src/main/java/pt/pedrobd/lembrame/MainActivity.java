@@ -9,7 +9,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.view.View;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.window.OnBackInvokedDispatcher;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -54,7 +58,25 @@ public class MainActivity extends Activity {
         });
 
         web = new WebView(this);
-        setContentView(web);
+        // O Android 15+ desenha a app por baixo das barras do sistema (ecrã de ponta a ponta).
+        // A WebView fica dentro de um contentor com margens iguais às barras e ao teclado.
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(getColor(R.color.bg));
+        root.addView(web, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        setContentView(root);
+        if (Build.VERSION.SDK_INT >= 30) {
+            root.setOnApplyWindowInsetsListener((v, insets) -> {
+                android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                android.graphics.Insets ime = insets.getInsets(WindowInsets.Type.ime());
+                v.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+                return WindowInsets.CONSUMED;
+            });
+        }
+        applyBarIcons();
+        // Botão "voltar": no Android 13+ (e obrigatório a partir do 16) usa-se o "voltar preditivo".
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::handleBack);
+        }
         WebSettings ws = web.getSettings();
         ws.setJavaScriptEnabled(true);
         ws.setDomStorageEnabled(true);
@@ -174,10 +196,32 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    /** Ícones das barras do sistema escuros no modo claro e claros no modo escuro. */
+    private void applyBarIcons() {
+        if (Build.VERSION.SDK_INT < 30 || getWindow().getInsetsController() == null) return;
+        boolean night = (getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
+                == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+        int light = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+        getWindow().getInsetsController().setSystemBarsAppearance(night ? 0 : light, light);
+    }
+
+    @Override
+    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyBarIcons();
+        View root = (View) web.getParent();
+        if (root != null) root.setBackgroundColor(getColor(R.color.bg));
+    }
+
     @Override
     public void onBackPressed() {
-        // Primeiro fecha o que estiver aberto na interface (aviso, definições, edição).
-        // Se não houver nada, a app vai para segundo plano: os alarmes continuam marcados.
+        handleBack();   // Android 12 e anteriores
+    }
+
+    /** Primeiro fecha o que estiver aberto na interface (aviso, definições, edição).
+     *  Se não houver nada, a app vai para segundo plano: os alarmes continuam marcados. */
+    private void handleBack() {
         if (web == null || !pageReady) { moveTaskToBack(true); return; }
         web.evaluateJavascript("(window.__native && __native.onBack()) ? 'closed' : 'none'", result -> {
             if (result == null || !result.contains("closed")) moveTaskToBack(true);

@@ -130,12 +130,13 @@ public class Bridge {
     @SuppressLint("BatteryLife")
     @JavascriptInterface
     public void openBatterySettings() {
+        // Abre a lista de otimização de bateria do Android; a pessoa escolhe o Mamly → "Não otimizar".
+        // (Sem a permissão REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, que o Google Play restringe.)
         a.runOnUiThread(() -> {
             try {
-                a.startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                        Uri.parse("package:" + a.getPackageName())));
-            } catch (Exception e) {
                 a.startActivity(new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS));
+            } catch (Exception e) {
+                a.startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + a.getPackageName())));
             }
         });
     }

@@ -1068,7 +1068,10 @@
       toast(L('Daqui a 10 segundos deve falar. Podes desligar o ecrã.', 'It should speak in 10 seconds. You can turn the screen off.'));
       showDiag();
     });
-    $('fixBattery').addEventListener('click', () => NATIVE.openBatterySettings());
+    $('fixBattery').addEventListener('click', () => {
+      toast(L('Na lista, procura o Mamly e escolhe «Não otimizar» (ou «Sem restrições»).', 'In the list, find Mamly and choose “Don’t optimize” (or “Unrestricted”).'));
+      setTimeout(() => NATIVE.openBatterySettings(), 1200);
+    });
     $('fixNotif').addEventListener('click', () => NATIVE.openNotificationSettings());
     $('fixAlarm').addEventListener('click', () => NATIVE.openAlarmSettings());
     $('fixVoice').addEventListener('click', () => NATIVE.openVoiceInstall());
