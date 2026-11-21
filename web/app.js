@@ -951,6 +951,10 @@
     else speak(L('Modo mãe desligado.', 'Mom mode off.'));
   });
   $('settingsDlg').addEventListener('close', readSettings);
+  // X no topo das caixas: faz o mesmo que «Cancelar» / «Agora não» / fechar
+  document.querySelectorAll('.dlg-x').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.x === 'close') b.closest('dialog').close(); else $(b.dataset.x).click();
+  }));
   $('sTest').addEventListener('click', () => {
     readSettings(); unlock();
     speak(message({ text: L('Pagar a conta da luz', 'Pay the electricity bill'), hasDeadline: true, end: Date.now() + 130 * MIN }, 'regular'));

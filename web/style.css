@@ -354,6 +354,17 @@ button { cursor: pointer; }
 .dlg::backdrop { background: rgba(30, 14, 20, .5); backdrop-filter: blur(2px); }
 .dlg form { padding: 10px 22px calc(22px + env(safe-area-inset-bottom)); display: grid; gap: 16px; }
 .dlg-grip { width: 40px; height: 5px; border-radius: 9px; background: var(--line); margin: 0 auto 2px; }
+.dlg-head {
+  position: sticky; top: 0; z-index: 2; margin: -10px -22px 0; padding: 10px 16px 8px 22px; background: var(--card);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; row-gap: 6px;
+}
+.dlg-head .dlg-grip { grid-column: 1 / -1; }
+.dlg-x {
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 999px; cursor: pointer;
+  background: var(--bg-2, var(--bg)); border: 1px solid var(--line); color: var(--ink-2);
+}
+.dlg-x:hover { color: var(--ink); }
+.dlg h2:focus { outline: none; }
 .dlg h2 { margin: 0; font-family: var(--display); font-size: 24px; letter-spacing: -.02em; }
 .dlg label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; color: var(--muted); }
 .dlg input[type="text"], .dlg input[type="time"], .dlg select {

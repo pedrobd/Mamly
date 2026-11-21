@@ -163,8 +163,11 @@
 
   <dialog id="editDlg" class="dlg">
     <form method="dialog" id="editForm">
-      <div class="dlg-grip" aria-hidden="true"></div>
-      <h2>Editar lembrete</h2>
+      <div class="dlg-head">
+        <div class="dlg-grip" aria-hidden="true"></div>
+        <h2 tabindex="-1" autofocus>Editar lembrete</h2>
+        <button type="button" class="dlg-x" data-x="eCancel" aria-label="Fechar"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
+      </div>
       <label>O que tens de fazer
         <input id="eTask" type="text" required>
       </label>
@@ -207,8 +210,11 @@
 
   <dialog id="shareDlg" class="dlg">
     <form method="dialog" id="shareForm">
-      <div class="dlg-grip" aria-hidden="true"></div>
-      <h2 id="shareTitle">Recebeste um lembrete</h2>
+      <div class="dlg-head">
+        <div class="dlg-grip" aria-hidden="true"></div>
+        <h2 id="shareTitle" tabindex="-1" autofocus>Recebeste um lembrete</h2>
+        <button type="button" class="dlg-x" data-x="shareNo" aria-label="Fechar"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
+      </div>
       <div class="share-card">
         <p class="share-task" id="shareTask"></p>
         <p class="share-when" id="shareWhen"></p>
@@ -224,8 +230,11 @@
 
   <dialog id="settingsDlg" class="dlg">
     <form method="dialog" id="settingsForm">
-      <div class="dlg-grip" aria-hidden="true"></div>
-      <h2>Definições</h2>
+      <div class="dlg-head">
+        <div class="dlg-grip" aria-hidden="true"></div>
+        <h2 tabindex="-1" autofocus>Definições</h2>
+        <button type="button" class="dlg-x" data-x="close" aria-label="Fechar"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg></button>
+      </div>
       <label>O teu nome (a voz chama-te pelo nome)
         <input id="sName" type="text" placeholder="opcional">
       </label>
