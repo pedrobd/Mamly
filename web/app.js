@@ -643,7 +643,7 @@
     $('spEmpty').innerHTML = L('Este momento de calma é oferecido por', 'This calm moment is brought to you by') + '<br>' + supLink(supMain, supLogo(supMain));
   }
   function renderSupportWall() {
-    if (!supMain && !supOthers.length) return; // fica o cartão «Este espaço pode ser teu»
+    if (!supMain && !supOthers.length) { $('supportMail').hidden = !SUP.open; return; } // cartão «Este espaço pode ser teu»
     const mail = EN ? 'mailto:hello@mamly.app?subject=Supporting%20Mamly' : 'mailto:ola@mamly.app?subject=Quero%20apoiar%20o%20Mamly';
     $('spWall').innerHTML = '<h4>' + L('Apoiantes do Mamly', 'Mamly supporters') + ' 💛</h4>'
       + (supMain ? supLink(supMain, supLogo(supMain) + '<span>' + L('Apoiante principal', 'Main supporter') + '</span>', 'sp-main') : '')

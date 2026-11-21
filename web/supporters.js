@@ -10,6 +10,7 @@
  *   others: [ { name: 'Outra', logo: 'supporters/outra.png', url: 'https://outra.pt' } ],
  */
 window.MAMLY_SUPPORTERS = {
+  open: false, // true = mostra o cartão «Este espaço pode ser teu» quando não há apoiantes
   main: null,
   others: [],
 };
