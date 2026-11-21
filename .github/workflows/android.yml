@@ -11,9 +11,10 @@ on:
 permissions:
   contents: write
 
+# em fila: nunca cancelar uma execução a meio da publicação (deixava o lançamento em rascunho)
 concurrency:
   group: mamly-apk
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -94,3 +95,9 @@ jobs:
           - Certificado de assinatura (SHA-256): 95:BC:23:51:60:D6:DA:36:85:D5:D7:15:31:9C:FC:53:EF:D1:96:0E:F0:DD:E0:5D:C6:58:17:D3:79:4F:C0:B1
 
           Downloads de versões anteriores: ${PREV_DOWNLOADS}"
+          # garante que fica publicado (não rascunho) e que o link responde
+          gh release edit mamly --draft=false --prerelease
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" -L "https://github.com/${GITHUB_REPOSITORY}/releases/download/mamly/Mamly.apk")
+            echo "link do APK: $code"; [ "$code" = 200 ] && break; sleep 10
+          done
