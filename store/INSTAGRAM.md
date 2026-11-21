@@ -5,7 +5,15 @@
 **Nome:** Mamly · Lembretes por voz
 (O nome aparece nas pesquisas. Com "Lembretes por voz", quem procurar "lembretes" encontra a conta.)
 
-**Bio** (máx. 150 carateres)
+**Bio bilingue** (135 de 150 carateres)
+```
+🇵🇹 A mãe que te lembra de tudo. Em voz alta.
+🇬🇧 The mom who reminds you of everything. Out loud.
+🧠 PHDA · ADHD 💛
+👇 Experimenta / Try it
+```
+
+Alternativa só em português:
 ```
 A mãe que te lembra de tudo. Em voz alta. 💛
 Lembretes falados para cabeças com PHDA 🧠
@@ -13,7 +21,7 @@ Feito em Portugal 🇵🇹
 👇 Experimenta
 ```
 
-**Link:** https://mamly.app
+**Link:** https://mamly.app (o site abre em inglês para quem tem o telemóvel noutra língua)
 **Categoria:** App (Editar perfil → Categoria → "App")
 
 ---
