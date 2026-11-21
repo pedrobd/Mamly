@@ -25,13 +25,13 @@ Para gerar as imagens outra vez: `node store/gen.js`
 **Nome:** Mamly – Lembretes por voz
 
 **Descrição breve** (máx. 80 carateres)
-> Lembretes falados para quem tem PHDA. Diz, e ela lembra-te em voz alta.
+> Lembretes falados que insistem. Pensado para PHDA, útil para toda a gente.
 
 **Descrição completa**
 ```
 O Mamly é a mãe que te lembra de tudo. Em voz alta.
 
-Esqueces-te das coisas assim que pousas o telemóvel? O Mamly foi pensado para cabeças com PHDA: dizes o que tens de fazer, como dirias a alguém, e ele avisa-te em voz alta à hora certa, mesmo com o ecrã bloqueado.
+Esqueces-te das coisas assim que pousas o telemóvel? O Mamly foi pensado para cabeças com PHDA, mas é útil para qualquer pessoa que ande com mil coisas na cabeça: dizes o que tens de fazer, como dirias a alguém, e ele avisa-te em voz alta à hora certa, mesmo com o ecrã bloqueado.
 
 🗣️ DIZ, NÃO ESCREVAS
 Carrega no microfone e fala naturalmente:
@@ -74,13 +74,13 @@ Para adicionar: Ficha da loja principal → **Gerir traduções** → Adicionar 
 **Name:** Mamly – Voice reminders
 
 **Short description**
-> Spoken reminders for ADHD brains. Say it, and she'll remind you out loud.
+> Spoken reminders that keep at it. Made for ADHD, handy for everyone.
 
 **Full description**
 ```
 Mamly is the mom who reminds you of everything. Out loud.
 
-Forget things the moment you put your phone down? Mamly was made for ADHD brains: just say what you need to do, the way you'd tell a friend, and it reminds you out loud right on time, even when your phone is locked.
+Forget things the moment you put your phone down? Mamly was made for ADHD brains, but it helps anyone juggling a million things: just say what you need to do, the way you'd tell a friend, and it reminds you out loud right on time, even when your phone is locked.
 
 🗣️ SAY IT, DON'T TYPE IT
 Tap the mic and talk naturally:

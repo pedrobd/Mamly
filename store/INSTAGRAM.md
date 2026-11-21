@@ -5,18 +5,18 @@
 **Nome:** Mamly · Lembretes por voz
 (O nome aparece nas pesquisas. Com "Lembretes por voz", quem procurar "lembretes" encontra a conta.)
 
-**Bio bilingue** (135 de 150 carateres)
+**Bio bilingue** (cerca de 140 de 150 carateres)
 ```
 🇵🇹 A mãe que te lembra de tudo. Em voz alta.
 🇬🇧 The mom who reminds you of everything. Out loud.
-🧠 PHDA · ADHD 💛
-👇 Experimenta / Try it
+🧠 PHDA · ADHD · para todos · for all 💛
+👇
 ```
 
 Alternativa só em português:
 ```
 A mãe que te lembra de tudo. Em voz alta. 💛
-Lembretes falados para cabeças com PHDA 🧠
+Lembretes falados. Pensado para PHDA, útil para todos 🧠
 Feito em Portugal 🇵🇹
 👇 Experimenta
 ```
@@ -130,6 +130,8 @@ O Mamly foi pensado para isso:
 🔁 Insiste até fazeres, sem culpas
 🔒 Sem contas e sem anúncios: tudo fica no teu telemóvel
 
+E se não tens PHDA mas andas com mil coisas na cabeça? Também é para ti 💛
+
 Guarda este post (se te lembrares 😅).
 
 🇬🇧
@@ -141,6 +143,8 @@ Mamly was made for exactly this:
 🗣️ Talk instead of typing, zero friction
 🔁 It nudges until you do it, no guilt
 🔒 No accounts, no ads: everything stays on your phone
+
+No ADHD but a million things on your mind? It's for you too 💛
 
 Save this post (if you remember 😅).
 

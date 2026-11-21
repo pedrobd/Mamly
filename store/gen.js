@@ -21,7 +21,7 @@ const T = {
       ['ecra-aviso', 'Toca à hora certa,', 'mesmo com o <span class="hl">ecrã desligado</span>.'],
       ['ecra-modo-mae', 'Modo mãe:', 'a voz <span class="hl">carinhosa</span> da mãe.'],
       ['ecra-partilha', 'Partilha lembretes', 'com <span class="hl">quem gostas</span>.'],
-      ['ecra-escuro', 'Pensado para PHDA.', 'Simples, <span class="hl">sem distrações</span>.'],
+      ['ecra-escuro', 'Pensado para PHDA.', '<span class="hl">Útil para toda a gente</span>.'],
     ],
   },
   en: {
@@ -33,7 +33,7 @@ const T = {
       ['ecra-aviso', 'Rings right on time,', 'even with the <span class="hl">screen off</span>.'],
       ['ecra-modo-mae', 'Mom mode:', 'a <span class="hl">caring</span>, motherly voice.'],
       ['ecra-partilha', 'Share reminders', 'with the <span class="hl">people you love</span>.'],
-      ['ecra-escuro', 'Made for ADHD.', 'Simple, <span class="hl">no distractions</span>.'],
+      ['ecra-escuro', 'Made for ADHD.', '<span class="hl">Handy for everyone</span>.'],
     ],
   },
 };
