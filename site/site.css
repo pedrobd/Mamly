@@ -170,6 +170,7 @@ section { max-width: 1120px; margin: 0 auto; padding: 72px 20px; }
 .mom p { color: #E9D6E2; font-size: 18px; }
 .quotes { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .quotes li { background: rgba(255,255,255,.08); border-radius: 20px 20px 20px 6px; padding: 14px 18px; font-weight: 700; font-size: 17px; }
+.quotes li small { display: block; margin-bottom: 4px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
 .quotes li:nth-child(even) { background: var(--coral); color: var(--plum); border-radius: 20px 20px 6px 20px; margin-left: 24px; }
 @media (max-width: 860px) { .mom { grid-template-columns: 1fr; padding: 34px 22px; border-radius: 28px; margin-left: 16px; margin-right: 16px; } }
 
