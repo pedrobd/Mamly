@@ -260,7 +260,7 @@
   // ---------- mensagens faladas ----------
   function message(r, kind) { return cap(rawMessage(r, kind)); }
   // Vários lembretes no mesmo aviso (igual a Msg.group no Android)
-  const NUM_PT = ['', 'uma', 'duas', 'três', 'quatro', 'cinco', 'seis'], NUM_EN = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
+  const NUM_PT = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis'], NUM_EN = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
   function groupMessage(items) {
     const now = Date.now(), n = items.length, short = n > 2;
     let suffix = false;
@@ -275,8 +275,8 @@
     const list = parts.slice(0, -1).join(sep) + lastSep + parts[n - 1];
     const num = (EN ? NUM_EN : NUM_PT)[n] || String(n);
     const intro = settings.momMode
-      ? L(momName() + ', tens ' + num + ' coisas para fazer, coração: ', momName() + ', you have ' + num + ' things to do, honey: ')
-      : L((settings.name ? settings.name + ', ' : '') + 'tens ' + num + ' coisas: ', (settings.name ? settings.name + ', ' : '') + 'you have ' + num + ' things: ');
+      ? L(momName() + ', tens ' + num + ' eventos, coração: ', momName() + ', you have ' + num + ' events, honey: ')
+      : L((settings.name ? settings.name + ', ' : '') + 'tens ' + num + ' eventos: ', (settings.name ? settings.name + ', ' : '') + 'you have ' + num + ' events: ');
     return cap(intro + list + '.');
   }
   // "o meu nome" passa a ser o nome das definições
@@ -508,7 +508,7 @@
     const target = all ? null : matchItem(t, grp);
     const askWhich = async () => {
       if (round >= 2) return;
-      await speak(L('Qual delas? ', 'Which one? ') + joinOr(grp.map(x => taskName(x.r))) + '?');
+      await speak(L('Qual deles? ', 'Which one? ') + joinOr(grp.map(x => taskName(x.r))) + '?');
       if (current) await listenForAnswer(current.r, round + 1);
     };
     if (DONE_RE.test(t)) {
@@ -557,8 +557,8 @@
     $('alert').dataset.kind = items[0].kind || 'regular';
     $('alert').hidden = false;
     $('alert').scrollTop = 0;
-    $('alertKicker').textContent = L('Lembretes', 'Reminders');
-    $('alertTask').textContent = L('Tens ' + items.length + ' coisas', 'You have ' + items.length + ' things');
+    $('alertKicker').textContent = L('Eventos', 'Events');
+    $('alertTask').textContent = L('Tens ' + items.length + ' eventos', 'You have ' + items.length + ' events');
     $('alertMeta').textContent = '';
     $('alertList').innerHTML = items.map(({ r }) => '<li><span><b>' + esc(r.text) + '</b><small>' + esc(alertMetaText(r)) + '</small></span>'
       + '<button class="alert-item-done" data-alert="done-item" data-rid="' + esc(r.id) + '">' + ICON.check + esc(L('Feito', 'Done')) + '</button></li>').join('');
@@ -599,8 +599,8 @@
     closeNotif(r.id);
     if (spoken) await speak(pick(settings.momMode
       ? (EN ? ["Well done! I'm proud of you.", "Good job, honey! That's the way.", "That's it, " + momName() + '! One less thing.']
-            : ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos uma coisa.'])
-      : (EN ? ["Nice! It's done.", 'Well done, one less thing.', 'Done. Nice!'] : ['Boa! Está feito.', 'Muito bem, menos uma coisa.', 'Feito. Boa!'])));
+            : ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos um evento.'])
+      : (EN ? ["Nice! It's done.", 'Well done, one less thing.', 'Done. Nice!'] : ['Boa! Está feito.', 'Muito bem, menos um evento.', 'Feito. Boa!'])));
   }
   async function snooze(r, mins, spoken) {
     r.snoozeAt = Date.now() + mins * MIN;
@@ -726,7 +726,7 @@
       if (r.hasDeadline) return r.text + L(', até às ', ', by ') + sayTime(r.end);
       return r.text;
     });
-    await speak(L('Tens ', 'You have ') + open.length + (open.length === 1 ? L(' coisa', ' thing') : L(' coisas', ' things')) + L(' para fazer. ', ' to do. ') + parts.join('. ') + '.');
+    await speak(L('Tens ', 'You have ') + open.length + (open.length === 1 ? L(' evento', ' thing') : L(' eventos', ' things')) + L(' por fazer. ', ' to do. ') + parts.join('. ') + '.');
   }
 
   // ---------- microfone ----------
@@ -840,7 +840,7 @@
     $('summary').innerHTML = n === 0
       ? (done.length ? L('Tudo feito. <b>Boa!</b>', 'All done. <b>Nice!</b>') : L('Nada pendente. Diz-me o que tens de fazer.', 'Nothing pending. Tell me what you need to do.'))
       : EN ? 'You have <b>' + n + (n === 1 ? ' thing' : ' things') + '</b> to do' + (done.length ? ' · ' + done.length + ' already done' : '') + '.'
-      : 'Tens <b>' + n + (n === 1 ? ' coisa' : ' coisas') + '</b> para fazer' + (done.length ? ' · ' + done.length + ' já ' + (done.length === 1 ? 'feita' : 'feitas') : '') + '.';
+      : 'Tens <b>' + n + (n === 1 ? ' evento' : ' eventos') + '</b> por fazer' + (done.length ? ' · ' + done.length + ' já ' + (done.length === 1 ? 'feito' : 'feitos') : '') + '.';
   }
 
   function itemHTML(r) {

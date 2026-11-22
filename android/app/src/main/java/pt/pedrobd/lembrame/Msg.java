@@ -51,7 +51,7 @@ final class Msg {
         return out.isEmpty() ? out : Character.toUpperCase(out.charAt(0)) + out.substring(1);
     }
 
-    /** Vários lembretes no mesmo aviso: «Pedro, tens duas coisas: ir à padaria, até às 15 horas; e ir ao mecânico, até às 17 horas.» */
+    /** Vários lembretes no mesmo aviso: «Pedro, tens dois eventos: ir à padaria, até às 15 horas; e ir ao mecânico, até às 17 horas.» */
     static String group(java.util.List<JSONObject> items, JSONObject s, long now) {
         boolean en = isEn(s), mom = s.optBoolean("momMode", false);
         String name = s.optString("name", "").trim();
@@ -74,13 +74,13 @@ final class Msg {
         String lastSep = suffix ? (en ? "; and " : "; e ") : (en ? " and " : " e ");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) { if (i > 0) sb.append(i == n - 1 ? lastSep : sep); sb.append(parts.get(i)); }
-        String[] num = en ? new String[]{"", "one", "two", "three", "four", "five", "six"} : new String[]{"", "uma", "duas", "três", "quatro", "cinco", "seis"};
+        String[] num = en ? new String[]{"", "one", "two", "three", "four", "five", "six"} : new String[]{"", "um", "dois", "três", "quatro", "cinco", "seis"};
         String nn = n < num.length ? num[n] : String.valueOf(n);
         String intro;
         if (mom) {
             String nm = name.isEmpty() ? (en ? "sweetheart" : "meu amor") : name;
-            intro = en ? nm + ", you have " + nn + " things to do, honey: " : nm + ", tens " + nn + " coisas para fazer, coração: ";
-        } else intro = (name.isEmpty() ? "" : name + ", ") + (en ? "you have " + nn + " things: " : "tens " + nn + " coisas: ");
+            intro = en ? nm + ", you have " + nn + " events, honey: " : nm + ", tens " + nn + " eventos, coração: ";
+        } else intro = (name.isEmpty() ? "" : name + ", ") + (en ? "you have " + nn + " events: " : "tens " + nn + " eventos: ");
         String out = intro + sb + ".";
         return Character.toUpperCase(out.charAt(0)) + out.substring(1);
     }
