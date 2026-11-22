@@ -392,6 +392,24 @@ button { cursor: pointer; }
 .share-task { margin: 0; font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.2; color: var(--ink); overflow-wrap: anywhere; }
 .share-when { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
 .share-note { margin: 0; color: var(--muted); font-size: 14px; }
+.welcome form { gap: 14px; padding-top: 26px; }
+.w-step { display: grid; gap: 14px; }
+.w-step h2 { font-size: 26px; }
+.w-step p { margin: 0; color: var(--ink-2); font-size: 16px; line-height: 1.5; }
+.w-logo { border-radius: 22px; box-shadow: var(--shadow-sm); }
+.w-examples { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.w-examples li { padding: 12px 14px; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--line); font-weight: 600; font-size: 15px; }
+.w-small { font-size: 14px !important; }
+.w-perms { display: grid; gap: 8px; }
+.w-perm { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg-2); color: var(--ink); font: inherit; font-weight: 700; font-size: 16px; text-align: left; cursor: pointer; }
+.w-ok { flex: none; width: 24px; height: 24px; border-radius: 99px; border: 2px solid var(--line); display: grid; place-items: center; font-size: 14px; }
+.w-perm.ok .w-ok { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.w-perm.ok .w-ok::before { content: "✓"; font-weight: 800; }
+.w-dots { display: flex; justify-content: center; gap: 6px; padding-top: 4px; }
+.w-dots i { width: 7px; height: 7px; border-radius: 9px; background: var(--line); }
+.w-dots i.on { background: var(--accent-2); width: 20px; }
+.quiet { display: grid; gap: 10px; }
+.quiet-hint { margin: 0; font-size: 13px; color: var(--muted); }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 /* apoiantes */
 .sp-strip { margin: 26px auto 6px; text-align: center; color: var(--muted); }

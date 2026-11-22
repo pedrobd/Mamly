@@ -233,6 +233,43 @@
     </form>
   </dialog>
 
+  <dialog id="welcomeDlg" class="dlg welcome">
+    <form method="dialog" id="welcomeForm">
+      <div class="w-step" data-step="1">
+        <img class="w-logo" src="icon.svg" alt="" width="84" height="84">
+        <h2>Olá! Eu sou o Mamly 💛</h2>
+        <p>Dizes-me o que tens de fazer e eu lembro-te <b>em voz alta</b>, à hora certa. E insisto até fazeres.</p>
+        <label>Como te chamas? (a voz chama-te pelo nome)
+          <input id="wName" type="text" placeholder="opcional" autocomplete="given-name">
+        </label>
+        <button type="button" class="btn btn-primary w-next">Seguinte</button>
+      </div>
+      <div class="w-step" data-step="2" hidden>
+        <h2>Fala comigo como falas com alguém</h2>
+        <p>Toca no microfone e diz, por exemplo:</p>
+        <ul class="w-examples">
+          <li>«Daqui a 20 minutos tirar a roupa da máquina»</li>
+          <li>«Todos os dias às 9h tomar a medicação»</li>
+          <li>«De hora a hora até às 17h ir ao mecânico»</li>
+        </ul>
+        <p class="w-small">Quando o aviso tocar, podes responder <b>«feito»</b> ou <b>«adia 15 minutos»</b>.</p>
+        <button type="button" class="btn btn-primary w-next" id="wNext2">Seguinte</button>
+      </div>
+      <div class="w-step" data-step="3" hidden>
+        <h2>Para tocar com o ecrã desligado</h2>
+        <p>O Android precisa de algumas autorizações. Toca em cada uma:</p>
+        <div class="w-perms">
+          <button type="button" class="w-perm" data-perm="notif"><span class="w-ok"></span><span>Notificações</span></button>
+          <button type="button" class="w-perm" data-perm="alarm"><span class="w-ok"></span><span>Alarmes e lembretes</span></button>
+          <button type="button" class="w-perm" data-perm="battery"><span class="w-ok"></span><span>Funcionar em segundo plano</span></button>
+          <button type="button" class="w-perm" data-perm="mic"><span class="w-ok"></span><span>Microfone</span></button>
+        </div>
+        <button type="button" class="btn btn-primary w-done">Começar</button>
+      </div>
+      <div class="w-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    </form>
+  </dialog>
+
   <dialog id="settingsDlg" class="dlg">
     <form method="dialog" id="settingsForm">
       <div class="dlg-head">
@@ -273,6 +310,14 @@
       </label>
       <label class="toggle mom"><input id="sMom" type="checkbox"> <span><b>Modo mãe 💛</b> A voz fala como uma mãe carinhosa: <q>Meu amor, não te esqueças…</q></span></label>
       <label class="toggle"><input id="sChime" type="checkbox"> <span>Tocar um sinal antes de falar</span></label>
+      <div class="quiet">
+        <label class="toggle"><input id="sQuiet" type="checkbox"> <span><b>Horas de silêncio</b> · Não repetir avisos de noite</span></label>
+        <div class="row2" id="sQuietTimes">
+          <label>Das <input id="sQuietFrom" type="time" value="23:00"></label>
+          <label>Até às <input id="sQuietTo" type="time" value="08:00"></label>
+        </div>
+        <p class="quiet-hint">Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.</p>
+      </div>
       <label class="toggle" id="sAlarmWrap" hidden><input id="sAlarm" type="checkbox"> <span>Usar o volume do alarme (ouve-se mesmo com o telemóvel em silêncio)</span></label>
       <label class="toggle"><input id="sListen" type="checkbox"> <span>Depois do aviso, ouvir a resposta (<q>feito</q>, <q>adia 15 minutos</q>)</span></label>
       <label class="toggle" id="sLockAlertWrap" hidden><input id="sLockAlert" type="checkbox"> <span>Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz</span></label>

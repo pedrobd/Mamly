@@ -13,7 +13,8 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, lockAlert: true, alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
+  const FIRST_RUN = (() => { try { return !localStorage.getItem(SKEY) && !localStorage.getItem(KEY); } catch (e) { return false; } })();
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
 
   // ---------- língua ----------
   // 'auto' segue a língua do telemóvel: português se for pt-*, inglês em todas as outras.
@@ -82,7 +83,11 @@
   // ---------- agenda de cada lembrete ----------
   function plan(r) {
     const ev = [];
-    if (r.once) ev.push({ at: r.firstAt, kind: 'once' });
+    if (r.recur) {
+      // repete por dias: as próximas ~60 vezes, a partir do último aviso
+      const from = Math.max(r.lastAt || 0, (r.createdAt || Date.now()) - 1, Date.now() - 864e5);
+      LembreteParser.nextRecur(r.recur, from, 60).forEach(at => ev.push({ at, kind: 'once' }));
+    } else if (r.once) ev.push({ at: r.firstAt, kind: 'once' });
     else {
       const step = r.interval * MIN;
       const stop = r.hasDeadline ? r.end - 10 * MIN : r.end + 1;
@@ -99,7 +104,16 @@
     if (r.snoozeAt) ev.push({ at: r.snoozeAt, kind: 'snooze' });
     return ev
       .filter(e => !(r.quietUntil && e.kind === 'regular' && e.at < r.quietUntil))
+      // horas de silêncio: só calam as repetições automáticas (não na 1.ª hora depois de criar o lembrete)
+      .filter(e => !(e.kind === 'regular' && inQuiet(e.at) && e.at - (r.createdAt || 0) > 60 * MIN))
       .sort((a, b) => a.at - b.at);
+  }
+  function inQuiet(t) {
+    if (!settings.quietOn) return false;
+    const mins = (v, d) => { const [h, m] = String(v || d).split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+    const a = mins(settings.quietFrom, '23:00'), b = mins(settings.quietTo, '08:00');
+    const dt = new Date(t), x = dt.getHours() * 60 + dt.getMinutes();
+    return a === b ? false : a < b ? (x >= a && x < b) : (x >= a || x < b);
   }
   const pending = (r) => plan(r).filter(e => e.at > (r.lastAt || 0));
   const nextEvent = (r) => pending(r)[0] || null;
@@ -108,7 +122,23 @@
     if (nextEvent(r)) return 'active';
     return r.hasDeadline || r.once ? 'waiting' : 'finished';
   }
+  const DAYS_PT = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const recurTime = (rc) => String(rc.h).padStart(2, '0') + ':' + String(rc.m).padStart(2, '0');
+  // «Todos os dias», «De segunda a sexta», «Às segundas e quintas», «Dia 5 de cada mês»
+  function recurLabel(rc, spoken) {
+    const and = (a) => a.length < 2 ? a[0] : a.slice(0, -1).join(', ') + L(' e ', ' and ') + a[a.length - 1];
+    if (rc.kind === 'daily') return L('todos os dias', 'every day');
+    if (rc.kind === 'monthly') return L('no dia ' + rc.dom + ' de cada mês', 'on day ' + rc.dom + ' of every month');
+    const d = rc.days.join();
+    if (d === '1,2,3,4,5') return L('de segunda a sexta', 'on weekdays');
+    if (d === '0,6') return L('aos fins de semana', 'on weekends');
+    if (EN) return 'every ' + and(rc.days.map(x => DAYS_EN[x]));
+    const plural = rc.days.map(x => DAYS_PT[x] + 's');
+    return (rc.days.every(x => x === 0 || x === 6) ? 'aos ' : 'às ') + and(plural);
+  }
   function describe(r) {
+    if (r.recur) return cap(recurLabel(r.recur)) + ' · ' + recurTime(r.recur);
     const day = dayWord(r.once ? r.firstAt : (r.end || r.firstAt));
     if (r.once) return (day ? cap(day) : L('Hoje ', 'Today ')) + L('às ', 'at ') + hm(r.firstAt) + L(' · uma vez', ' · once');
     let s = cap(sayInterval(r.interval));
@@ -357,6 +387,9 @@
   }
   function rawConfirmation0(r) {
     const task = lowerFirst(r.text);
+    if (r.recur) return EN
+      ? 'Okay. ' + cap(recurLabel(r.recur)) + ' at ' + sayTime(r.firstAt) + " I'll remind you: " + task + '.'
+      : 'Combinado. ' + cap(recurLabel(r.recur)) + ', às ' + sayTime(r.firstAt) + ', lembro-te de: ' + task + '.';
     const day = dayWord(r.once ? r.firstAt : r.firstAt);
     if (EN) {
       if (r.once) return "Okay. I'll remind you " + (day ? day : '') + 'at ' + sayTime(r.firstAt) + ': ' + task + '.';
@@ -548,6 +581,7 @@
     $('alertDoneLabel').textContent = L('Feito', 'Done');
   }
   function alertMetaText(r) {
+    if (r.recur) return cap(recurLabel(r.recur)) + L(' às ', ' at ') + recurTime(r.recur);
     return r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left')
       : !r.once && r.interval ? shortInterval(r.interval) + (r.end ? L(' até às ', ' until ') + hm(r.end) : '') : '';
   }
@@ -593,7 +627,12 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('alert').hidden) closeTopLayer(); });
 
   async function markDone(r, spoken) {
-    r.done = true; r.doneAt = Date.now();
+    if (r.recur) {
+      // repete por dias: fica feito o de hoje (ou o próximo, se ainda não tocou nas próximas horas) e continua
+      const nx = nextEvent(r);
+      r.lastAt = Math.max(r.lastAt || 0, Date.now(), nx && nx.at - Date.now() < 12 * 3600e3 ? nx.at : 0);
+      r.snoozeAt = null; r.lastDoneAt = Date.now();
+    } else { r.done = true; r.doneAt = Date.now(); }
     save(); render();
     alertRemove(r);
     closeNotif(r.id);
@@ -694,7 +733,7 @@
       id: Math.random().toString(36).slice(2, 10),
       text: p.task, interval: p.interval, firstAt: p.firstAt, end: p.end,
       once: p.once, hasDeadline: p.hasDeadline, createdAt: Date.now(), lastAt: 0, done: false,
-      said: text, say: p.say || null, forMs: p.forMs || null,
+      said: text, say: p.say || null, forMs: p.forMs || null, recur: p.recur || null,
     };
     nativeLog(L('Ouvi', 'Heard') + ': «' + text + '» → ' + r.text + ' · ' + (r.once ? hm(r.firstAt) : (r.interval + ' min' + (r.end ? ' → ' + hm(r.end) : ''))));
     reminders.push(r);
@@ -722,6 +761,7 @@
     const open = reminders.filter(r => !r.done);
     if (!open.length) return speak(L('Não tens nada pendente. Boa!', 'You have nothing pending. Nice!'));
     const parts = open.map(r => {
+      if (r.recur) return r.text + ', ' + recurLabel(r.recur) + L(' às ', ' at ') + sayTime(r.firstAt);
       if (r.once) return r.text + ', ' + dayWord(r.firstAt) + L('às ', 'at ') + sayTime(r.firstAt);
       if (r.hasDeadline) return r.text + L(', até às ', ', by ') + sayTime(r.end);
       return r.text;
@@ -846,7 +886,8 @@
   function itemHTML(r) {
     const st = status(r);
     const tags = [];
-    if (r.once) tags.push(`<span class="tag">${ICON.bell}${L('Uma vez', 'Once')}</span>`);
+    if (r.recur) tags.push(`<span class="tag">${ICON.repeat}${esc(cap(recurLabel(r.recur)))}</span>`);
+    else if (r.once) tags.push(`<span class="tag">${ICON.bell}${L('Uma vez', 'Once')}</span>`);
     else tags.push(`<span class="tag">${ICON.repeat}${esc(shortInterval(r.interval))}</span>`);
     if (r.hasDeadline) tags.push(`<span class="tag deadline">${ICON.clock}${EN ? 'by ' + dayWord(r.end) : dayWord(r.end) + 'até '}${hm(r.end)}</span>`);
     else if (!r.once && r.end) tags.push(`<span class="tag">${L('até', 'until')} ${hm(r.end)}</span>`);
@@ -900,10 +941,10 @@
     setText('nextIn', dayWord(bestEv.at) ? cap(dayWord(bestEv.at).trim()) : L('daqui a ', 'in ') + shortDur(bestEv.at - now));
     setText('nextTime', bigTime(bestEv.at, now));
     setText('nextTask', best.text);
-    const meta = best.once ? L('Aviso único', 'One-time reminder') : shortInterval(best.interval) + (best.hasDeadline ? L(' · prazo às ', ' · due at ') + hm(best.end) : '');
+    const meta = best.recur ? cap(recurLabel(best.recur)) : best.once ? L('Aviso único', 'One-time reminder') : shortInterval(best.interval) + (best.hasDeadline ? L(' · prazo às ', ' · due at ') + hm(best.end) : '');
     setText('nextMeta', meta);
     // anel: quanto falta para o próximo aviso (cheio = acabou de avisar, vazio = vai tocar)
-    const span = best.once ? Math.max(bestEv.at - (best.createdAt || now), MIN) : (bestEv.kind === 'regular' ? best.interval * MIN : 15 * MIN);
+    const span = best.once || best.recur ? Math.max(bestEv.at - Math.max(best.createdAt || now, best.recur ? best.lastAt || 0 : 0), MIN) : (bestEv.kind === 'regular' ? best.interval * MIN : 15 * MIN);
     const left = Math.min(1, Math.max(0, (bestEv.at - now) / span));
     $('nextRing').style.strokeDashoffset = String(326.7 * (1 - left));
     $('nextBarWrap').hidden = !best.hasDeadline;
@@ -946,6 +987,16 @@
   function openEdit(r) {
     editing = r;
     $('eTask').value = r.text;
+    $('eInterval').querySelectorAll('option[data-recur]').forEach(o => o.remove());
+    if (r.recur) {
+      const o = document.createElement('option'); o.value = 'recur'; o.dataset.recur = '1'; o.textContent = cap(recurLabel(r.recur));
+      $('eInterval').appendChild(o); $('eInterval').value = 'recur';
+      $('eStart').value = recurTime(r.recur);
+      $('eEnd').value = ''; $('eDeadline').checked = false;
+      syncEditFields();
+      $('editDlg').showModal();
+      return;
+    }
     $('eInterval').value = r.once ? '0' : String(r.interval);
     if (!$('eInterval').value) {
       const o = document.createElement('option'); o.value = r.interval; o.textContent = L('De ' + r.interval + ' em ' + r.interval + ' min', 'Every ' + r.interval + ' min');
@@ -958,13 +1009,23 @@
     $('editDlg').showModal();
   }
   function syncEditFields() {
-    const once = $('eInterval').value === '0';
+    const once = $('eInterval').value === '0' || $('eInterval').value === 'recur';
     $('eEndWrap').style.visibility = once ? 'hidden' : 'visible';
     $('eDeadline').closest('label').hidden = once;
     $('eStartLabel').textContent = once ? L('Hora do aviso', 'Reminder time') : L('Próximo aviso', 'Next reminder');
   }
   function saveEdit() {
     const r = editing; if (!r) return;
+    if (r.recur && $('eInterval').value === 'recur') {
+      const [h, m] = $('eStart').value.split(':').map(Number);
+      r.text = $('eTask').value.trim() || r.text;
+      if (!isNaN(h)) { r.recur.h = h; r.recur.m = m || 0; }
+      r.lastAt = Date.now(); r.snoozeAt = null;
+      r.firstAt = LembreteParser.nextRecur(r.recur, Date.now())[0];
+      save(); render(); toast(L('Guardado', 'Saved'));
+      return;
+    }
+    if (r.recur) r.recur = null; // passou a «uma vez» / «de X em X»
     const interval = parseFloat($('eInterval').value);
     const ref = r.once ? r.firstAt : (r.end || r.firstAt);
     let start = fromTimeInput($('eStart').value, ref);
@@ -1021,6 +1082,10 @@
     $('sChime').checked = settings.chime;
     $('sListen').checked = settings.listenAfter;
     $('sLockAlert').checked = settings.lockAlert;
+    $('sQuiet').checked = !!settings.quietOn;
+    $('sQuietFrom').value = settings.quietFrom || '23:00';
+    $('sQuietTo').value = settings.quietTo || '08:00';
+    $('sQuietTimes').hidden = !settings.quietOn;
     $('sAlarm').checked = settings.alarmVolume;
     $('sMom').checked = !!settings.momMode;
     $('sListen').disabled = !CAN_LISTEN;
@@ -1054,9 +1119,14 @@
     settings.chime = $('sChime').checked;
     settings.listenAfter = $('sListen').checked;
     settings.lockAlert = $('sLockAlert').checked;
+    settings.quietOn = $('sQuiet').checked;
+    settings.quietFrom = $('sQuietFrom').value || '23:00';
+    settings.quietTo = $('sQuietTo').value || '08:00';
+    $('sQuietTimes').hidden = !settings.quietOn;
     settings.alarmVolume = $('sAlarm').checked;
     settings.momMode = $('sMom').checked;
     saveSettings();
+    render(); // as horas de silêncio mudam os próximos avisos
   }
 
   // ---------- eventos ----------
@@ -1191,7 +1261,10 @@
     list.forEach(a => {
       const r = reminders.find(x => x.id === a.rid);
       if (!r) return;
-      if (a.type === 'done') { r.done = true; r.doneAt = a.at || Date.now(); }
+      if (a.type === 'done') {
+        if (r.recur) { r.lastAt = Math.max(r.lastAt || 0, a.at || Date.now()); r.snoozeAt = null; r.lastDoneAt = a.at || Date.now(); }
+        else { r.done = true; r.doneAt = a.at || Date.now(); }
+      }
       else if (a.type === 'snooze') { r.snoozeAt = a.until; r.quietUntil = a.until; r.lastAt = Math.max(r.lastAt || 0, Date.now()); }
       alertRemove(r);
     });
@@ -1267,7 +1340,7 @@
       },
       onSpoken() { checkNativeAlert(); },
       onActions() { applyNativeActions(); },
-      onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); },
+      onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); updateWelcomePerms(); },
       onSharedLink() { checkIncomingLink(); },
       onVoiceReady() { updateNativeNotice(); if (settings.nativeVoice) NATIVE.setVoice(settings.nativeVoice); },
       // botão "voltar" do Android: fecha o que estiver aberto; devolve false se não havia nada para fechar
@@ -1325,7 +1398,15 @@
   function shareLink(r) {
     const data = { v: 1, t: r.text, i: r.interval || 0, o: r.once ? 1 : 0, f: r.firstAt, e: r.end || 0, d: r.hasDeadline ? 1 : 0, n: settings.name || '' };
     if (r.say) data.s = r.say;
+    if (r.recur) data.rc = r.recur;
     return SHARE_BASE + '#r=' + b64url(JSON.stringify(data));
+  }
+  function validRecur(rc) {
+    if (!rc || typeof rc !== 'object' || !['daily', 'weekly', 'monthly'].includes(rc.kind)) return null;
+    const h = Math.min(23, Math.max(0, rc.h | 0)), m = Math.min(59, Math.max(0, rc.m | 0));
+    if (rc.kind === 'weekly') { const days = (Array.isArray(rc.days) ? rc.days : []).map(x => x | 0).filter(x => x >= 0 && x <= 6); return days.length ? { kind: 'weekly', days, h, m } : null; }
+    if (rc.kind === 'monthly') return { kind: 'monthly', dom: Math.min(31, Math.max(1, rc.dom | 0)), h, m };
+    return { kind: 'daily', h, m };
   }
   function decodeShare(str) {
     try {
@@ -1336,6 +1417,7 @@
         text: d.t.slice(0, 200), interval: d.i > 0 ? Math.max(10 / 60, Math.min(+d.i, 720)) : null, once: !!d.o,
         firstAt: +d.f || Date.now(), end: +d.e || null, hasDeadline: !!d.d, say: typeof d.s === 'string' ? d.s.slice(0, 200) : null,
         from: typeof d.n === 'string' ? d.n.slice(0, 40) : '',
+        recur: validRecur(d.rc),
       };
     } catch (e) { return null; }
   }
@@ -1357,7 +1439,8 @@
     const now = Date.now();
     // se o primeiro aviso já passou, avança para o próximo (ou avisa, se era só uma vez)
     let expired = false;
-    if (!sh.once && sh.interval) {
+    if (sh.recur) sh.firstAt = LembreteParser.nextRecur(sh.recur, now)[0];
+    else if (!sh.once && sh.interval) {
       const step = sh.interval * MIN;
       while (sh.firstAt <= now) sh.firstAt += step;
       if (sh.end && sh.firstAt >= sh.end && !sh.hasDeadline) expired = true;
@@ -1378,8 +1461,9 @@
     const r = {
       id: Math.random().toString(36).slice(2, 10), text: sh.text, interval: sh.once ? null : (sh.interval || 60),
       firstAt: sh.firstAt, end: sh.once ? null : sh.end, once: sh.once, hasDeadline: sh.hasDeadline,
-      createdAt: Date.now(), lastAt: 0, done: false, say: sh.say, sharedBy: sh.from || '',
+      createdAt: Date.now(), lastAt: 0, done: false, say: sh.say, sharedBy: sh.from || '', recur: sh.recur || null,
     };
+    if (r.recur) { r.once = false; r.interval = null; r.end = null; r.hasDeadline = false; }
     if (r.once && r.firstAt <= Date.now()) r.firstAt = Date.now() + 5 * MIN;
     reminders.push(r); save(); render();
     unlock();
@@ -1441,7 +1525,7 @@
     '. A app não tem contas, não tem publicidade e não envia os teus lembretes para lado nenhum.': ". The app has no accounts, no ads, and doesn't send your reminders anywhere.",
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
-    'Testar voz': 'Test voice', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
+    'Testar voz': 'Test voice', 'Olá! Eu sou o Mamly 💛': "Hi! I'm Mamly 💛", 'Dizes-me o que tens de fazer e eu lembro-te': 'Tell me what you need to do and I’ll remind you', 'em voz alta': 'out loud', ', à hora certa. E insisto até fazeres.': ', right on time. And I’ll keep at it until it’s done.', 'Como te chamas? (a voz chama-te pelo nome)': 'What’s your name? (the voice will call you by it)', 'Seguinte': 'Next', 'Fala comigo como falas com alguém': 'Talk to me like you’d talk to a friend', 'Toca no microfone e diz, por exemplo:': 'Tap the microphone and say, for example:', '«Daqui a 20 minutos tirar a roupa da máquina»': '“In 20 minutes take the laundry out”', '«Todos os dias às 9h tomar a medicação»': '“Every day at 9 take my meds”', '«De hora a hora até às 17h ir ao mecânico»': '“Every hour until 5pm go to the mechanic”', 'Quando o aviso tocar, podes responder': 'When a reminder rings, you can reply', '«feito»': '“done”', 'ou': 'or', '«adia 15 minutos»': '“snooze 15 minutes”', 'Para tocar com o ecrã desligado': 'To ring with the screen off', 'O Android precisa de algumas autorizações. Toca em cada uma:': 'Android needs a few permissions. Tap each one:', 'Notificações': 'Notifications', 'Alarmes e lembretes': 'Alarms & reminders', 'Funcionar em segundo plano': 'Run in the background', 'Microfone': 'Microphone', 'Começar': 'Start', 'Horas de silêncio': 'Quiet hours', '· Não repetir avisos de noite': "· Don't repeat reminders at night", 'Das': 'From', 'Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.': 'Reminders set for a specific time (e.g. “at 7”, “every day at 9”) always ring.', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
     'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram', 'Apoiantes do Mamly': 'Mamly supporters', 'Este espaço pode ser teu': 'This space could be yours', 'Queres apoiar o projeto? Fala connosco.': 'Want to support the project? Get in touch.',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
@@ -1503,6 +1587,57 @@
   tick();
   syncNative();
   checkIncomingLink();
+
+  // ---------- primeira abertura ----------
+  let wStep = 1;
+  function welcomeStep(n) {
+    wStep = n;
+    document.querySelectorAll('#welcomeDlg .w-step').forEach(el => { el.hidden = Number(el.dataset.step) !== n; });
+    const steps = NATIVE ? 3 : 2;
+    document.querySelectorAll('#welcomeDlg .w-dots i').forEach((d, i) => { d.hidden = i >= steps; d.classList.toggle('on', i === n - 1); });
+    $('wNext2').textContent = NATIVE ? L('Seguinte', 'Next') : L('Começar', 'Start');
+    if (n === 3) updateWelcomePerms();
+  }
+  function updateWelcomePerms() {
+    if (!NATIVE || !$('welcomeDlg').open) return;
+    let st = {};
+    try { st = JSON.parse(NATIVE.status()); } catch (e) {}
+    const ok = { notif: st.notifications, alarm: st.exact, battery: st.battery, mic: st.mic };
+    document.querySelectorAll('#welcomeDlg .w-perm').forEach(b => {
+      const v = ok[b.dataset.perm];
+      b.classList.toggle('ok', !!v);
+      b.hidden = v === undefined;
+    });
+  }
+  function finishWelcome() {
+    settings.name = $('wName').value.trim() || settings.name;
+    settings.onboarded = true;
+    saveSettings();
+    if ($('welcomeDlg').open) $('welcomeDlg').close();
+    render();
+    unlock();
+    speak((settings.name ? L('Olá, ', 'Hi, ') + settings.name + '! ' : L('Olá! ', 'Hi! ')) + L('Estou pronta. Toca no microfone e diz-me o que tens de fazer.', "I'm ready. Tap the microphone and tell me what you need to do."));
+  }
+  $('welcomeDlg').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.classList.contains('w-next')) {
+      if (wStep === 1) { settings.name = $('wName').value.trim(); welcomeStep(2); }
+      else if (wStep === 2) { if (NATIVE) welcomeStep(3); else finishWelcome(); }
+    } else if (b.classList.contains('w-done')) finishWelcome();
+    else if (b.dataset.perm && NATIVE) {
+      const p = b.dataset.perm;
+      if (p === 'notif') NATIVE.openNotificationSettings();
+      else if (p === 'alarm') NATIVE.openAlarmSettings();
+      else if (p === 'battery') { toast(L('Na lista, procura o Mamly e escolhe «Não otimizar» (ou «Sem restrições»).', 'In the list, find Mamly and choose “Don’t optimize” (or “Unrestricted”).')); setTimeout(() => NATIVE.openBatterySettings(), 1200); }
+      else if (p === 'mic' && NATIVE.requestMic) NATIVE.requestMic();
+    }
+  });
+  $('welcomeDlg').addEventListener('close', () => { if (!settings.onboarded) { settings.onboarded = true; saveSettings(); } });
+  if (FIRST_RUN && !settings.onboarded && !location.hash.includes('r=')) {
+    $('wName').value = settings.name || '';
+    welcomeStep(1);
+    $('welcomeDlg').showModal();
+  }
 
   window.__lembretes = { shareLink, decodeShare, handleInput, get reminders() { return reminders; }, plan, message, confirmation, tick };
 })();

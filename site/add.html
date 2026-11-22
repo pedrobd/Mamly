@@ -92,7 +92,18 @@
       document.title = (d.n ? d.n + L(' quer lembrar-te', ' wants to remind you') : L('Um lembrete para ti', 'A reminder for you')) + ' · Mamly';
       document.getElementById('title').textContent = d.n ? d.n + L(' quer lembrar-te de', ' wants to remind you') : L('Recebeste um lembrete', 'You got a reminder');
       document.getElementById('task').textContent = String(d.t).slice(0, 200);
-      document.getElementById('when').textContent = d.o
+      var rc = d.rc && typeof d.rc === 'object' ? d.rc : null;
+      var rcText = function () {
+        var hhmm = pad(rc.h | 0) + ':' + pad(rc.m | 0);
+        var DP = ['domingos', 'segundas', 'terças', 'quartas', 'quintas', 'sextas', 'sábados'], DE = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var days = (rc.days || []).join();
+        var lab = rc.kind === 'daily' ? L('Todos os dias', 'Every day')
+          : rc.kind === 'monthly' ? L('Dia ' + rc.dom + ' de cada mês', 'Day ' + rc.dom + ' of every month')
+          : days === '1,2,3,4,5' ? L('De segunda a sexta', 'On weekdays') : days === '0,6' ? L('Aos fins de semana', 'On weekends')
+          : L('Às ', 'Every ') + (rc.days || []).map(function (x) { return EN ? DE[x] : DP[x]; }).join(L(' e ', ' and '));
+        return lab + L(' às ', ' at ') + hhmm;
+      };
+      document.getElementById('when').textContent = rc ? rcText() : d.o
         ? (day(d.f).charAt(0).toUpperCase() + day(d.f).slice(1)) + L(' às ', ' at ') + hm(d.f)
         : every(d.i || 60) + (d.e ? L(' · até ', ' · until ') + (day(d.e) === L('hoje', 'today') ? '' : day(d.e) + ' ') + L('às ', 'at ') + hm(d.e) : '');
       document.getElementById('card').hidden = false;

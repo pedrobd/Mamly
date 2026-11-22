@@ -72,6 +72,26 @@
     return { h, m: min };
   }
 
+
+  // Próximas horas de um lembrete que se repete por dias: { kind: 'daily'|'weekly'|'monthly', days, dom, h, m }
+  function nextRecur(rc, from, count) {
+    const out = [], n = count || 1;
+    const base = new Date(from); base.setHours(rc.h, rc.m, 0, 0);
+    for (let i = 0; i < 800 && out.length < n; i++) {
+      const t = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i, rc.h, rc.m, 0, 0);
+      if (t.getTime() <= from) continue;
+      const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+      const ok = rc.kind === 'daily' || (rc.kind === 'weekly' && rc.days.indexOf(t.getDay()) >= 0)
+        || (rc.kind === 'monthly' && t.getDate() === Math.min(rc.dom, last));
+      if (ok) out.push(t.getTime());
+    }
+    return out;
+  }
+
+  const DOW_EN = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+  const DOWRE_EN = '(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?';
+  const dowOfEn = (w) => DOW_EN[w.replace(/s$/, '')];
+
   function parse(input, opts) {
     opts = opts || {};
     const now = opts.now != null ? opts.now : Date.now();
@@ -88,6 +108,29 @@
     const tp = cut(/\sthis (morning|afternoon|evening)(?=[\s,.!?])/);
     if (tp) gp = tp[1];
     cut(/\stoday(?=[\s,.!?])/);
+
+    // repeating by days: "every day", "on weekdays", "every monday and thursday", "on weekends", "on the 5th of every month"
+    let recur = null, recurPeriod = null, rm;
+    if ((rm = cut(/\s(?:every ?day|daily|each day|every (morning|afternoon|evening|night))(?=[\s,.!?])/))) {
+      recur = { kind: 'daily' }; if (rm[1]) recurPeriod = rm[1] === 'night' ? 'evening' : rm[1];
+    } else if (cut(/\s(?:on weekdays|every weekday|weekdays|(?:from )?monday to friday|during the week)(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
+    } else if (cut(/\s(?:on |every |at )?(?:the )?weekends?(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [0, 6] };
+    } else if ((rm = s.match(new RegExp('\\s(?:every|on|each)\\s+' + DOWRE_EN + '(?:\\s*(?:,|and)\\s*' + DOWRE_EN + ')*(?=[\\s,.!?])')))
+               && (/^\s*(?:every|each)/.test(rm[0]) || /s(?=$|\s*(?:,|and))/.test(rm[0].trim().split(/\s+/)[1] || ''))) {
+      s = s.replace(rm[0], ' ');
+      const days = (rm[0].match(new RegExp(DOWRE_EN, 'g')) || []).map(dowOfEn).filter(d => d != null);
+      recur = { kind: 'weekly', days: days.filter((d, i) => days.indexOf(d) === i).sort() };
+    } else if ((rm = cut(/\s(?:on )?(?:the )?(\d{1,2})(?:st|nd|rd|th)? (?:of )?(?:every|each) month(?=[\s,.!?])/)
+             || cut(/\s(?:every month|each month|monthly) on the (\d{1,2})(?:st|nd|rd|th)?(?=[\s,.!?])/))) {
+      recur = { kind: 'monthly', dom: Math.max(1, Math.min(31, parseInt(rm[1], 10))) };
+    }
+    // a weekday, once: "on friday at 10", "next monday", "this friday"
+    if (!recur && !dayOffset) {
+      const wd = cut(new RegExp('\\s(?:on|this|next|on next)\\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=[\\s,.!?])'));
+      if (wd) { const d = dowOfEn(wd[1]); const diff = (d - new Date(now).getDay() + 7) % 7; dayOffset = diff === 0 ? 7 : diff; }
+    }
 
     // interval
     let interval = null;
@@ -113,6 +156,17 @@
     if (!rel) rel = cut(new RegExp('\\s(\\d+)\\s*' + UNIT + '\\s+from now(?=[\\s,.!?])'));
     const at = cut(new RegExp('\\s(?:at|around|@)\\s+' + TIME));
     if (pm) cut(new RegExp(pm[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+    if (recur) {
+      const per = recurPeriod || period;
+      const tm = at ? timeFrom(at, per || 'morning') : startM ? timeFrom(startM, per || 'morning') : null;
+      recur.h = tm ? tm.h : per ? PERIOD[per][0] + (per === 'afternoon' ? 1 : per === 'evening' ? 2 : 0) : 9;
+      recur.m = tm ? tm.m : 0;
+      const task0 = restoreCase(cleanTask(s), String(input));
+      const say0 = task0.match(/^(?:say|tell me|repeat)\s+(?:that\s+)?(.+)$/i);
+      return { task: task0, interval: null, firstAt: nextRecur(recur, now)[0], end: null, once: false, hasDeadline: false,
+        say: say0 ? say0[1] : null, forMs: null, fromNow: false, recur };
+    }
 
     const base = new Date(now);
     base.setHours(0, 0, 0, 0);
@@ -205,7 +259,7 @@
     return out.charAt(0).toUpperCase() + out.slice(1);
   }
 
-  const api = { parse, normalize, cleanTask };
+  const api = { parse, normalize, cleanTask, nextRecur };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.LembreteParserEN = api;
 })(typeof window !== 'undefined' ? window : this);

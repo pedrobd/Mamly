@@ -112,6 +112,15 @@ public class Bridge {
     @JavascriptInterface
     public void alertClosed() { a.alertClosed(); }
 
+    /** Primeira abertura: pede a autorização do microfone sem começar a ouvir. */
+    @JavascriptInterface
+    public void requestMic() {
+        a.runOnUiThread(() -> {
+            if (a.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED)
+                a.requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, MainActivity.REQ_MIC);
+        });
+    }
+
     /** Android 14+: autorização para mostrar o aviso no ecrã de bloqueio. */
     @JavascriptInterface
     public void openFullScreenSettings() {
@@ -146,6 +155,7 @@ public class Bridge {
             o.put("googleTts", Speech.googleInstalled(a));
             android.app.NotificationManager nm = a.getSystemService(android.app.NotificationManager.class);
             o.put("fullScreen", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
+            o.put("mic", a.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED);
         } catch (JSONException ignored) {}
         return o.toString();
     }

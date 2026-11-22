@@ -40,7 +40,7 @@ public class MainActivity extends Activity {
     WebView web;
     Speech speech;
     Dictation dictation;
-    private static final int REQ_MIC = 2;
+    static final int REQ_MIC = 2;
     private String pendingListenMode = null;
     private String pendingSharedLink = null;
     private boolean pageReady = false;

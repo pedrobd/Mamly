@@ -74,6 +74,26 @@
     return { h, m: min };
   }
 
+
+  // Próximas horas de um lembrete que se repete por dias: { kind: 'daily'|'weekly'|'monthly', days, dom, h, m }
+  function nextRecur(rc, from, count) {
+    const out = [], n = count || 1;
+    const base = new Date(from); base.setHours(rc.h, rc.m, 0, 0);
+    for (let i = 0; i < 800 && out.length < n; i++) {
+      const t = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i, rc.h, rc.m, 0, 0);
+      if (t.getTime() <= from) continue;
+      const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+      const ok = rc.kind === 'daily' || (rc.kind === 'weekly' && rc.days.indexOf(t.getDay()) >= 0)
+        || (rc.kind === 'monthly' && t.getDate() === Math.min(rc.dom, last));
+      if (ok) out.push(t.getTime());
+    }
+    return out;
+  }
+
+  const DOW_PT = { domingo: 0, segunda: 1, 'terça': 2, terca: 2, quarta: 3, quinta: 4, sexta: 5, 'sábado': 6, sabado: 6 };
+  const DOWRE_PT = '(?:domingo|segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado)s?(?:-feiras?)?';
+  const dowOf = (w) => DOW_PT[w.replace(/s?(?:-feiras?)?$/, '').replace(/^ter[çc]a$/, 'terça').replace(/^s[áa]bado$/, 'sábado')];
+
   const toMin = (n, unit) => /^s/.test(unit) ? n / 60 : /^h/.test(unit) ? n * 60 : n;
 
   function parse(input, opts) {
@@ -90,6 +110,28 @@
     cut(/\s(?:hoje|esta tarde|esta manhã|esta noite)(?=[\s,.!?])/);
     const tmp = String(input).toLowerCase();
     const gp = /esta tarde/.test(tmp) ? 'tarde' : /esta manhã|esta manha/.test(tmp) ? 'manhã' : /esta noite/.test(tmp) ? 'noite' : null;
+
+    // repetição por dias: «todos os dias», «de segunda a sexta», «às segundas e quintas», «aos fins de semana», «dia 5 de cada mês»
+    let recur = null, recurPeriod = null, rm;
+    if ((rm = cut(/\s(?:todos os dias|diariamente|cada dia|todas as (manhãs|tardes|noites))(?=[\s,.!?])/))) {
+      recur = { kind: 'daily' }; if (rm[1]) recurPeriod = rm[1].slice(0, -1);
+    } else if (cut(/\s(?:de segunda a sexta(?:-feira)?|(?:nos |durante os |em )?dias (?:úteis|uteis|de semana)|durante a semana)(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
+    } else if (cut(/\s(?:aos |ao |nos |todos os )?fins? de semana(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [0, 6] };
+    } else if ((rm = s.match(new RegExp('\\s(?:todas as|todos os|às|as|aos|cada|nas|nos)\\s+' + DOWRE_PT + '(?:\\s*(?:,|e)\\s*(?:às|as|aos|nas|nos|à|ao)?\\s*' + DOWRE_PT + ')*(?=[\\s,.!?])')))) {
+      s = s.replace(rm[0], ' ');
+      const days = (rm[0].match(new RegExp(DOWRE_PT, 'g')) || []).map(dowOf).filter(d => d != null);
+      recur = { kind: 'weekly', days: days.filter((d, i) => days.indexOf(d) === i).sort() };
+    } else if ((rm = cut(/\s(?:no |ao |a )?dia (\d{1,2})(?: de cada mês| de todos os meses| todos os meses| de cada mes)(?=[\s,.!?])/)
+             || cut(/\s(?:todos os meses|cada mês|cada mes|mensalmente)(?: no| ao| a)? dia (\d{1,2})(?=[\s,.!?])/))) {
+      recur = { kind: 'monthly', dom: Math.max(1, Math.min(31, parseInt(rm[1], 10))) };
+    }
+    // um dia da semana, uma só vez: «na sexta às 10h», «na próxima segunda»
+    if (!recur && !dayOffset) {
+      const wd = cut(new RegExp('\\s(?:na|no|nesta|neste|esta|este|na próxima|no próximo|próxima|próximo)\\s+(' + DOWRE_PT + ')(?=[\\s,.!?])(?!\\s+(?:vez|vezes|parte|via|mão|metade|opção|hipótese|oportunidade))'));
+      if (wd) { const d = dowOf(wd[1]); if (d != null) { const diff = (d - new Date(now).getDay() + 7) % 7; dayOffset = diff === 0 ? 7 : diff; } }
+    }
 
     // intervalo
     let interval = null;
@@ -118,6 +160,18 @@
     const rel = cut(/\s(?:daqui a|dentro de|em)\s+(\d+)\s*(segundos?|seg|minutos?|min|horas?|h)(?=[\s,.!?])/);
     const at = cut(new RegExp('\\s(?:[àa]s|pelas?|para as|para [àa]s|à)\\s+' + TIME));
     if (pm) cut(new RegExp(pm[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+    if (recur) {
+      // sem «da tarde/noite», as horas ficam como ditas («às 7» = 7:00), que é o habitual em rotinas
+      const per = recurPeriod || period;
+      const tm = at ? timeFrom(at, per || 'manhã') : startM ? timeFrom(startM, per || 'manhã') : null;
+      recur.h = tm ? tm.h : per ? PERIOD[per][0] + (per === 'tarde' ? 1 : per === 'noite' ? 2 : 0) : 9;
+      recur.m = tm ? tm.m : 0;
+      const task0 = restoreCase(cleanTask(s), String(input));
+      const say0 = task0.match(/^(?:diz|dizer|fala|falar|repete|repetir)(?:-me)?\s+(?:que\s+)?(.+)$/i);
+      return { task: task0, interval: null, firstAt: nextRecur(recur, now)[0], end: null, once: false, hasDeadline: false,
+        say: say0 ? say0[1] : null, forMs: null, fromNow: false, recur };
+    }
 
     const base = new Date(now);
     base.setHours(0, 0, 0, 0);
@@ -211,7 +265,7 @@
     return out.charAt(0).toUpperCase() + out.slice(1);
   }
 
-  const api = { parse, normalize, cleanTask };
+  const api = { parse, normalize, cleanTask, nextRecur };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.LembreteParser = api;
 })(typeof window !== 'undefined' ? window : this);
