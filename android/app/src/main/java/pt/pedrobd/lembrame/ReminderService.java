@@ -102,28 +102,35 @@ public class ReminderService extends Service {
             outstanding++;
             speech.pause(900, "pause-" + (seq++), id -> post(null));
         }
+        // Vários lembretes ao mesmo tempo: uma só notificação de voz («tens duas coisas: …»)
+        List<String> rids = new ArrayList<>(), kinds = new ArrayList<>();
+        for (JSONObject e : due) { rids.add(e.optString("rid")); kinds.add(e.optString("kind")); }
+        AlertState.fired(rids, kinds);
         for (JSONObject e : due) {
-            final String rid = e.optString("rid");
-            AlertState.fired(rid, e.optString("kind"));
             Notif.reminder(this, e);
-            MainActivity.dispatch("onFired", rid, e.optString("kind"));
-            String text = Msg.build(e, s, now);
-            Store.log(this, "A dizer: " + e.optString("task"));
-            for (int i = 0; i < repeat; i++) {
-                final boolean last = i == repeat - 1;
-                outstanding++;
-                speech.speak(text, rate, "say-" + (seq++), false, id -> post(last ? rid : null));
-                if (!last) { outstanding++; speech.pause(700, "gap-" + (seq++), id -> post(null)); }
-            }
+            MainActivity.dispatch("onFired", e.optString("rid"), e.optString("kind"), String.valueOf(e.optLong("at")));
+        }
+        String text = due.size() == 1 ? Msg.build(due.get(0), s, now) : Msg.group(due, s, now);
+        Store.log(this, due.size() == 1 ? "A dizer: " + due.get(0).optString("task") : "A dizer " + due.size() + " lembretes juntos");
+        final String lastRid = rids.get(rids.size() - 1);
+        for (int i = 0; i < repeat; i++) {
+            final boolean last = i == repeat - 1;
+            outstanding++;
+            speech.speak(text, rate, "say-" + (seq++), false, id -> post(last ? lastRid : null));
+            if (!last) { outstanding++; speech.pause(700, "gap-" + (seq++), id -> post(null)); }
         }
         return START_NOT_STICKY;
     }
 
-    /** Tira da lista os avisos que já chegaram; de cada lembrete fica só o mais recente. */
+    private static final long GROUP_MS = 5 * 60 * 1000L; // lembretes repetidos que iam tocar nos 5 min seguintes juntam-se a este aviso
+
+    /** Tira da lista os avisos que já chegaram; de cada lembrete fica só o mais recente.
+     *  Os lembretes repetidos que iam tocar nos 5 minutos seguintes vêm juntos (uma só interrupção).
+     *  Os avisos únicos, de último aviso e de hora limite nunca são adiantados. */
     private static List<JSONObject> takeDue(Context c) {
         long now = System.currentTimeMillis();
         JSONArray all = Store.events(c);
-        JSONArray keep = new JSONArray();
+        List<JSONObject> rest = new ArrayList<>();
         Map<String, JSONObject> latest = new LinkedHashMap<>();
         for (int i = 0; i < all.length(); i++) {
             JSONObject e = all.optJSONObject(i);
@@ -133,8 +140,22 @@ public class ReminderService extends Service {
                 if (now - at > STALE_MS && !"deadline".equals(e.optString("kind"))) continue;
                 JSONObject prev = latest.get(e.optString("rid"));
                 if (prev == null || prev.optLong("at") <= at) latest.put(e.optString("rid"), e);
-            } else keep.put(e);
+            } else rest.add(e);
         }
+        if (!latest.isEmpty()) {
+            Map<String, JSONObject> early = new LinkedHashMap<>();
+            for (JSONObject e : rest) {
+                String rid = e.optString("rid"), kind = e.optString("kind");
+                if (latest.containsKey(rid) || !e.optString("say", "").isEmpty()) continue;
+                if (!"regular".equals(kind) && !"snooze".equals(kind)) continue;
+                if (e.optLong("at") > now + GROUP_MS) continue;
+                JSONObject prev = early.get(rid);
+                if (prev == null || e.optLong("at") < prev.optLong("at")) early.put(rid, e);
+            }
+            for (JSONObject e : early.values()) { rest.remove(e); latest.put(e.optString("rid"), e); }
+        }
+        JSONArray keep = new JSONArray();
+        for (JSONObject e : rest) keep.put(e);
         Store.setEvents(c, keep);
         return new ArrayList<>(latest.values());
     }

@@ -259,6 +259,26 @@
 
   // ---------- mensagens faladas ----------
   function message(r, kind) { return cap(rawMessage(r, kind)); }
+  // Vários lembretes no mesmo aviso (igual a Msg.group no Android)
+  const NUM_PT = ['', 'uma', 'duas', 'três', 'quatro', 'cinco', 'seis'], NUM_EN = ['', 'one', 'two', 'three', 'four', 'five', 'six'];
+  function groupMessage(items) {
+    const now = Date.now(), n = items.length, short = n > 2;
+    let suffix = false;
+    const parts = items.map(({ r, kind }) => {
+      let t = softLower((r.say ? withName(r.say) : r.text).replace(/[.!?]+$/, ''));
+      if (kind === 'final' && r.end > now) { t += L(', último aviso, faltam ', ', last call, ') + sayDuration(r.end - now) + L('', ' left'); suffix = true; }
+      else if (kind === 'deadline') { t += L(', chegou a hora limite', ", time's up"); suffix = true; }
+      else if (!short && r.hasDeadline && r.end > now) { t += L(', até às ', ', until ') + sayTime(r.end); suffix = true; }
+      return t;
+    });
+    const sep = suffix ? '; ' : ', ', lastSep = suffix ? L('; e ', '; and ') : L(' e ', ' and ');
+    const list = parts.slice(0, -1).join(sep) + lastSep + parts[n - 1];
+    const num = (EN ? NUM_EN : NUM_PT)[n] || String(n);
+    const intro = settings.momMode
+      ? L(momName() + ', tens ' + num + ' coisas para fazer, coração: ', momName() + ', you have ' + num + ' things to do, honey: ')
+      : L((settings.name ? settings.name + ', ' : '') + 'tens ' + num + ' coisas: ', (settings.name ? settings.name + ', ' : '') + 'you have ' + num + ' things: ');
+    return cap(intro + list + '.');
+  }
   // "o meu nome" passa a ser o nome das definições
   const withName = (t) => t.replace(/\b(?:o\s+)?meu\s+nome\b|\bmy\s+name\b/gi, settings.name || L('o teu nome', 'your name'));
   // Frases variadas para soar a uma pessoa e não a um robô (iguais às do Android, em Msg.java).
@@ -364,9 +384,12 @@
   let busy = false;
   let current = null;
 
+  const GROUP_MS = 5 * MIN; // lembretes repetidos que iam tocar nos 5 min seguintes juntam-se ao mesmo aviso
+  const inQueue = (r) => queue.some(q => q.items.some(x => x.r === r));
   function tick() {
     const now = Date.now();
     let changed = false;
+    const fired = [];
     reminders.forEach(r => {
       if (r.done) return;
       const due = pending(r).filter(e => e.at <= now);
@@ -375,15 +398,27 @@
       r.lastAt = ev.at;
       if (ev.kind === 'snooze') r.snoozeAt = null;
       changed = true;
-      if (!NATIVE && !queue.some(q => q.r.id === r.id)) queue.push({ r, kind: ev.kind });
+      if (!NATIVE && !inQueue(r)) fired.push({ r, kind: ev.kind });
       // Na app: quem fala é o Android. Se a app está à vista e o Android não disser nada em 15 s, falamos nós.
       if (NATIVE && !document.hidden) nativeWatch[r.id] = { kind: ev.kind, t: now };
     });
+    if (fired.length) {
+      // junta os repetidos que iam tocar daqui a pouco (nunca os avisos únicos, de último aviso ou de hora limite)
+      reminders.forEach(r => {
+        if (r.done || r.say || fired.some(x => x.r === r) || inQueue(r)) return;
+        const ev = nextEvent(r);
+        if (!ev || ev.at > now + GROUP_MS || (ev.kind !== 'regular' && ev.kind !== 'snooze')) return;
+        r.lastAt = ev.at;
+        if (ev.kind === 'snooze') r.snoozeAt = null;
+        fired.push({ r, kind: ev.kind });
+      });
+      queue.push({ items: fired });
+    }
     if (changed) { save(); render(); }
     Object.keys(nativeWatch).forEach(id => {
       if (now - nativeWatch[id].t < 15000) return;
       const r = reminders.find(x => x.id === id);
-      if (r && !r.done && !queue.some(q => q.r.id === id)) queue.push({ r, kind: nativeWatch[id].kind });
+      if (r && !r.done && !inQueue(r)) queue.push({ items: [{ r, kind: nativeWatch[id].kind }] });
       delete nativeWatch[id];
     });
     if (!busy && queue.length) runQueue();
@@ -393,8 +428,20 @@
   async function runQueue() {
     busy = true;
     while (queue.length) {
-      const { r, kind } = queue.shift();
-      if (r.done || !reminders.includes(r)) continue;
+      const items = queue.shift().items.filter(x => !x.r.done && reminders.includes(x.r));
+      if (!items.length) continue;
+      if (items.length > 1) {
+        current = { r: items[0].r, kind: items[0].kind, group: items };
+        showGroupAlert(items);
+        items.forEach(x => notify(x.r, x.kind));
+        if (!unlocked) await new Promise(res => onUnlocked.push(res));
+        if (!current || !current.group) continue;
+        await chime();
+        await speak(groupMessage(current.group), settings.repeat);
+        if (settings.listenAfter && CAN_LISTEN && current) await listenForAnswer(current.r);
+        continue;
+      }
+      const { r, kind } = items[0];
       current = { r, kind };
       showAlert(r, kind);
       notify(r, kind);
@@ -408,23 +455,84 @@
     busy = false;
   }
 
-  async function listenForAnswer(r) {
-    $('alertHint').textContent = L('A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.', 'Listening… say “done”, “snooze 15 minutes” or “delete”.');
+  const DONE_RE = /(feito|fiz|já está|já foi|já fui|tratei|conclu|pronto|despachad|check|\bdone\b|did it|finished|completed|all set)/;
+  const DEL_RE = /(apaga|cancela|esquece|elimina|remove|delete|cancel|forget it)/;
+  const SNOOZE_RE = /(adia|adiar|depois|mais tarde|daqui a|espera|lembra.?me|snooze|later|remind me|wait|\bin \d)/;
+  const ALL_RE = /\b(tudo|todas?|todos|as duas|os dois|as tr[eê]s|os tr[eê]s|ambas|ambos|everything|all|both)\b/;
+  const fold = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const STOP = new Set('feito fiz feita adia adiar apaga apagar cancela minutos minuto horas hora meia tudo todas todos duas dois tres ambas ambos para lembra depois mais tarde esta foi pronto ja done snooze delete minutes minute hours hour half the and all both everything later remind'.split(' '));
+  // que lembrete do grupo foi nomeado («feito padaria» → «Ir à padaria»)
+  function matchItem(text, items) {
+    const words = fold(text).split(/[^a-z0-9]+/).filter(w => w.length >= 3 && !STOP.has(w));
+    if (!words.length) return null;
+    let best = null, bestScore = 0, tie = false;
+    items.forEach(x => {
+      const iw = fold(x.r.text).split(/[^a-z0-9]+/).filter(w => w.length >= 3);
+      const sc = words.filter(w => iw.some(v => v.startsWith(w.slice(0, 4)) || w.startsWith(v.slice(0, 4)))).length;
+      if (sc > bestScore) { best = x; bestScore = sc; tie = false; } else if (sc && sc === bestScore) tie = true;
+    });
+    return bestScore && !tie ? best : null;
+  }
+  const answerMinutes = (t) => {
+    const P = EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser;
+    const m = P.normalize(t).match(/(\d+)\s*(minutos?|min|minutes?|mins?|horas?|hours?|hrs?|h)\b/);
+    return m ? parseInt(m[1], 10) * (/^h/.test(m[2]) ? 60 : 1) : 10;
+  };
+  const groupNow = () => (current && current.group && current.group.length > 1 ? current.group.slice() : null);
+  const joinOr = (list) => list.length < 2 ? (list[0] || '') : list.slice(0, -1).join(', ') + L(' ou ', ' or ') + list[list.length - 1];
+  const joinAnd = (list) => list.length < 2 ? (list[0] || '') : list.slice(0, -1).join(', ') + L(' e ', ' and ') + list[list.length - 1];
+  const taskName = (r) => softLower(r.text.replace(/[.!?]+$/, ''));
+
+  async function listenForAnswer(r, round) {
+    round = round || 0;
+    const grp = groupNow();
+    $('alertHint').textContent = grp
+      ? L('A ouvir… diz «feito tudo», «feito» e o nome, ou «adia».', 'Listening… say “all done”, “done” and the name, or “snooze”.')
+      : L('A ouvir… diz “feito”, “adia 15 minutos” ou “apaga”.', 'Listening… say “done”, “snooze 15 minutes” or “delete”.');
     let text = '', err = '';
     nativeLog(L('A ouvir a resposta…', 'Listening for a reply…'));
     try { text = await listen({ maxMs: 10000, onInterim: (t) => { $('alertHint').textContent = '“' + t + '”'; } }); } catch (e) { err = e.message || 'erro'; }
     nativeLog(text ? L('Resposta: «', 'Reply: “') + text + L('»', '”') : L('Sem resposta', 'No reply') + (err ? ' (' + err + ')' : ''));
     $('alertHint').textContent = '';
-    if (!text || !current || current.r !== r) return;
+    if (!text || !current) return;
     const t = text.toLowerCase();
-    if (/(feito|fiz|já está|já foi|já fui|tratei|conclu|pronto|despachad|check|ok feito|\bdone\b|did it|finished|completed|all set)/.test(t)) await markDone(r, true);
-    else if (/(apaga|cancela|esquece|elimina|remove|delete|cancel|forget it)/.test(t)) { removeReminder(r); hideAlert(); await speak(L('Apagado.', 'Deleted.')); }
-    else if (/(adia|adiar|depois|mais tarde|daqui a|espera|lembra.?me|snooze|later|remind me|wait|\bin \d)/.test(t)) {
-      const P = EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser;
-      const m = P.normalize(t).match(/(\d+)\s*(minutos?|min|minutes?|mins?|horas?|hours?|hrs?|h)\b/);
-      const mins = m ? parseInt(m[1], 10) * (/^h/.test(m[2]) ? 60 : 1) : 10;
-      await snooze(r, mins, true);
+    if (!grp) {
+      if (current.r !== r) return;
+      if (DONE_RE.test(t)) await markDone(r, true);
+      else if (DEL_RE.test(t)) { removeReminder(r); alertRemove(r); await speak(L('Apagado.', 'Deleted.')); }
+      else if (SNOOZE_RE.test(t)) await snooze(r, answerMinutes(t), true);
+      return;
     }
+    // vários lembretes no mesmo aviso
+    const all = ALL_RE.test(t);
+    const target = all ? null : matchItem(t, grp);
+    const askWhich = async () => {
+      if (round >= 2) return;
+      await speak(L('Qual delas? ', 'Which one? ') + joinOr(grp.map(x => taskName(x.r))) + '?');
+      if (current) await listenForAnswer(current.r, round + 1);
+    };
+    if (DONE_RE.test(t)) {
+      if (all) { await doneAll(grp); return; }
+      if (!target) { await askWhich(); return; }
+      await markDone(target.r, true);
+      const left = groupNow() || (current ? [{ r: current.r }] : []);
+      if (left.length && round < 3) {
+        await speak(L('Falta: ', 'Still to do: ') + joinAnd(left.map(x => taskName(x.r))) + '.');
+        if (current) await listenForAnswer(current.r, round + 1);
+      }
+    } else if (DEL_RE.test(t)) {
+      if (!target) { await askWhich(); return; }
+      removeReminder(target.r); alertRemove(target.r); await speak(L('Apagado.', 'Deleted.'));
+    } else if (SNOOZE_RE.test(t)) {
+      const m = answerMinutes(t);
+      if (target) await snooze(target.r, m, true); else await snoozeAll(grp, m);
+    }
+  }
+  async function doneAll(items) {
+    for (let i = 0; i < items.length; i++) await markDone(items[i].r, i === items.length - 1);
+  }
+  async function snoozeAll(items, mins) {
+    for (let i = 0; i < items.length; i++) await snooze(items[i].r, mins, i === items.length - 1);
   }
 
   function showAlert(r, kind) {
@@ -435,9 +543,41 @@
     $('alert').scrollTop = 0;
     $('alertKicker').textContent = (EN ? { final: 'Last call', deadline: "Time's up", snooze: 'Again', once: "It's time" } : { final: 'Último aviso', deadline: 'Hora limite', snooze: 'Outra vez', once: 'Está na hora' })[kind] || L('Lembrete', 'Reminder');
     $('alertTask').textContent = r.text;
-    const left = r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left')
+    $('alertMeta').textContent = alertMetaText(r);
+    $('alertList').hidden = true;
+    $('alertDoneLabel').textContent = L('Feito', 'Done');
+  }
+  function alertMetaText(r) {
+    return r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left')
       : !r.once && r.interval ? shortInterval(r.interval) + (r.end ? L(' até às ', ' until ') + hm(r.end) : '') : '';
-    $('alertMeta').textContent = left;
+  }
+  // Vários lembretes no mesmo aviso: lista com um «Feito» para cada um, e «Feito tudo» / «Adiar tudo»
+  function showGroupAlert(items) {
+    $('alert').dataset.rid = items[0].r.id;
+    $('alert').dataset.kind = items[0].kind || 'regular';
+    $('alert').hidden = false;
+    $('alert').scrollTop = 0;
+    $('alertKicker').textContent = L('Lembretes', 'Reminders');
+    $('alertTask').textContent = L('Tens ' + items.length + ' coisas', 'You have ' + items.length + ' things');
+    $('alertMeta').textContent = '';
+    $('alertList').innerHTML = items.map(({ r }) => '<li><span><b>' + esc(r.text) + '</b><small>' + esc(alertMetaText(r)) + '</small></span>'
+      + '<button class="alert-item-done" data-alert="done-item" data-rid="' + esc(r.id) + '">' + ICON.check + esc(L('Feito', 'Done')) + '</button></li>').join('');
+    $('alertList').hidden = false;
+    $('alertDoneLabel').textContent = L('Feito tudo', 'All done');
+  }
+  // tira um lembrete do aviso aberto: no grupo, a lista encolhe; se era o último, o aviso fecha
+  function alertRemove(r) {
+    if (!current) return;
+    if (current.group && current.group.length > 1) {
+      if (!current.group.some(x => x.r === r)) return;
+      current.group = current.group.filter(x => x.r !== r);
+      if (current.group.length > 1) { current.r = current.group[0].r; current.kind = current.group[0].kind; showGroupAlert(current.group); return; }
+      const only = current.group[0];
+      current = { r: only.r, kind: only.kind };
+      showAlert(only.r, only.kind);
+      return;
+    }
+    if (current.r === r) hideAlert();
   }
   function hideAlert() {
     $('alert').hidden = true; current = null; stopListening();
@@ -455,7 +595,7 @@
   async function markDone(r, spoken) {
     r.done = true; r.doneAt = Date.now();
     save(); render();
-    if (current && current.r === r) hideAlert();
+    alertRemove(r);
     closeNotif(r.id);
     if (spoken) await speak(pick(settings.momMode
       ? (EN ? ["Well done! I'm proud of you.", "Good job, honey! That's the way.", "That's it, " + momName() + '! One less thing.']
@@ -467,7 +607,7 @@
     r.quietUntil = r.snoozeAt;
     if (r.done) r.done = false;
     save(); render();
-    if (current && current.r === r) hideAlert();
+    alertRemove(r);
     closeNotif(r.id);
     if (spoken) await speak(settings.momMode
       ? L('Está bem, mas daqui a ' + sayDuration(mins * MIN) + ' volto a lembrar, hein?', "Okay, but I'll remind you again in " + sayDuration(mins * MIN) + ', alright?')
@@ -971,6 +1111,15 @@
     cancelSpeech();   // na app, isto também cala a voz do alarme
     stopListening();
     if (!r || a === 'close') { hideAlert(); return; }
+    if (a === 'done-item') { const x = reminders.find(y => y.id === b.dataset.rid); if (x) markDone(x, true); return; }
+    const grp = groupNow();
+    if (grp) {
+      if (a === 'done') doneAll(grp);
+      else if (a === 'snooze10') snoozeAll(grp, 10);
+      else if (a === 'snooze30') snoozeAll(grp, 30);
+      else if (a === 'repeat') speak(groupMessage(grp));
+      return;
+    }
     if (a === 'done') markDone(r, true);
     else if (a === 'snooze10') snooze(r, 10, true);
     else if (a === 'snooze30') snooze(r, 30, true);
@@ -981,7 +1130,7 @@
   $('editForm').addEventListener('submit', (e) => { if (e.submitter && e.submitter.value === 'save') saveEdit(); });
   $('eCancel').addEventListener('click', () => $('editDlg').close());
   $('eDelete').addEventListener('click', () => {
-    if (editing) { removeReminder(editing); if (current && current.r === editing) hideAlert(); }
+    if (editing) { removeReminder(editing); alertRemove(editing); }
     $('editDlg').close();
   });
 
@@ -1044,7 +1193,7 @@
       if (!r) return;
       if (a.type === 'done') { r.done = true; r.doneAt = a.at || Date.now(); }
       else if (a.type === 'snooze') { r.snoozeAt = a.until; r.quietUntil = a.until; r.lastAt = Math.max(r.lastAt || 0, Date.now()); }
-      if (current && current.r === r) hideAlert();
+      alertRemove(r);
     });
     save(); render();
   }
@@ -1079,11 +1228,17 @@
     let a = null;
     try { a = JSON.parse(NATIVE.alertState() || 'null'); } catch (e) {}
     if (!a || !a.rid) return;
-    const r = reminders.find(x => x.id === a.rid && !x.done);
-    if (!r) return;
-    const key = a.rid + '@' + a.at;
+    const ids = a.rids && a.rids.length ? a.rids : [a.rid];
+    const kinds = a.kinds || [];
+    const items = ids.map((id, i) => ({ r: reminders.find(x => x.id === id && !x.done), kind: kinds[i] || a.kind })).filter(x => x.r);
+    if (!items.length) return;
+    const key = ids.join(',') + '@' + a.at;
     if (alertHandled === key) return;
-    if (!current || current.r !== r) { current = { r, kind: a.kind }; showAlert(r, a.kind); }
+    const r = items[0].r;
+    if (items.length > 1) {
+      const same = current && current.group && current.group.map(x => x.r.id).join() === items.map(x => x.r.id).join();
+      if (!same) { current = { r, kind: items[0].kind, group: items }; showGroupAlert(items); }
+    } else if (!current || current.r !== r || current.group) { current = { r, kind: items[0].kind }; showAlert(r, items[0].kind); }
     if (!a.spoken) { alertPoll = setTimeout(checkNativeAlert, 600); return; }
     if (!settings.listenAfter) { alertHandled = key; return; }
     if (document.hidden) { nativeLog('Aviso com a app escondida: espero que abra para ouvir'); return; } // ouve quando a app aparecer (onResume)
@@ -1099,15 +1254,16 @@
         if (!text && err) f.reject(new Error(err)); else f.resolve(text || '');
       },
       onPartial(text) { if (nativeListen && nativeListen.onInterim) nativeListen.onInterim(text); },
-      onFired(id, kind) {
+      onFired(id, kind, at) {
         delete nativeWatch[id];
         const r = reminders.find(x => x.id === id);
         if (!r) return;
-        r.lastAt = Math.max(r.lastAt || 0, Date.now());
+        // o Android pode juntar um aviso que ia tocar daqui a pouco: conta esse, não o de agora
+        r.lastAt = Math.max(r.lastAt || 0, Number(at) || 0, Date.now() - 1000);
         if (kind === 'snooze') r.snoozeAt = null;
-        current = { r, kind };
-        showAlert(r, kind);
         save(); render();
+        if (NATIVE.alertState) checkNativeAlert();
+        else { current = { r, kind }; showAlert(r, kind); }
       },
       onSpoken() { checkNativeAlert(); },
       onActions() { applyNativeActions(); },

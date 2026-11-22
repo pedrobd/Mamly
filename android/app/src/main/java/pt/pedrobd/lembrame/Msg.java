@@ -51,6 +51,40 @@ final class Msg {
         return out.isEmpty() ? out : Character.toUpperCase(out.charAt(0)) + out.substring(1);
     }
 
+    /** Vários lembretes no mesmo aviso: «Pedro, tens duas coisas: ir à padaria, até às 15 horas; e ir ao mecânico, até às 17 horas.» */
+    static String group(java.util.List<JSONObject> items, JSONObject s, long now) {
+        boolean en = isEn(s), mom = s.optBoolean("momMode", false);
+        String name = s.optString("name", "").trim();
+        int n = items.size();
+        boolean shortForm = n > 2; // com 3 ou mais, só os nomes (sem horas), para não ficar comprido
+        java.util.List<String> parts = new java.util.ArrayList<>();
+        boolean suffix = false;
+        for (JSONObject e : items) {
+            String say = e.optString("say", "").trim();
+            String t = softLower((say.isEmpty() ? e.optString("task", "") : say).replaceAll("[.!?]+$", ""));
+            String kind = e.optString("kind", "regular");
+            long end = e.optLong("end", 0);
+            boolean dl = e.optBoolean("hasDeadline", false) && end > now;
+            if ("final".equals(kind) && end > now) { t += en ? ", last call, " + duration(end - now, true) + " left" : ", último aviso, faltam " + duration(end - now, false); suffix = true; }
+            else if ("deadline".equals(kind)) { t += en ? ", time's up" : ", chegou a hora limite"; suffix = true; }
+            else if (!shortForm && dl) { t += (en ? ", until " : ", até às ") + time(end, en); suffix = true; }
+            parts.add(t);
+        }
+        String sep = suffix ? "; " : ", ";
+        String lastSep = suffix ? (en ? "; and " : "; e ") : (en ? " and " : " e ");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < n; i++) { if (i > 0) sb.append(i == n - 1 ? lastSep : sep); sb.append(parts.get(i)); }
+        String[] num = en ? new String[]{"", "one", "two", "three", "four", "five", "six"} : new String[]{"", "uma", "duas", "três", "quatro", "cinco", "seis"};
+        String nn = n < num.length ? num[n] : String.valueOf(n);
+        String intro;
+        if (mom) {
+            String nm = name.isEmpty() ? (en ? "sweetheart" : "meu amor") : name;
+            intro = en ? nm + ", you have " + nn + " things to do, honey: " : nm + ", tens " + nn + " coisas para fazer, coração: ";
+        } else intro = (name.isEmpty() ? "" : name + ", ") + (en ? "you have " + nn + " things: " : "tens " + nn + " coisas: ");
+        String out = intro + sb + ".";
+        return Character.toUpperCase(out.charAt(0)) + out.substring(1);
+    }
+
     private static final java.util.Random RANDOM = new java.util.Random();
     private static final java.util.Map<String, String[]> PHRASES = new java.util.HashMap<>();
     static {
