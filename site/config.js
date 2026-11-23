@@ -3,6 +3,7 @@
 window.MAMLY = {
   playUrl: '', // 'https://play.google.com/store/apps/details?id=pt.pedrobd.lembrame'
   goatcounter: 'mamly', // estatísticas sem cookies: https://mamly.goatcounter.com
+  webApp: false, // true = mostra os links para usar a app no browser (mamly.app/app/)
 };
 (function () {
   var C = window.MAMLY;
@@ -19,6 +20,7 @@ window.MAMLY = {
     document.querySelectorAll('[data-play-nav]').forEach(function (a) { if (live) a.href = C.playUrl; });
     document.querySelectorAll('[data-soon]').forEach(function (el) { el.hidden = live; });
     document.querySelectorAll('[data-live-only]').forEach(function (el) { el.hidden = !live; });
+    document.querySelectorAll('[data-web]').forEach(function (el) { el.hidden = !C.webApp; });
     // memoriza a língua escolhida (PT/EN)
     document.querySelectorAll('[data-lang]').forEach(function (a) {
       a.addEventListener('click', function () { try { localStorage.setItem('mamly.site.lang', a.dataset.lang); } catch (e) {} });

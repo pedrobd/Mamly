@@ -47,7 +47,7 @@
       <a class="btn primary" id="open" href="#">Abrir no Mamly</a>
       <p class="note" id="noAppNote" hidden>Parece que ainda não tens o Mamly. Instala-o e volta a tocar no link.</p>
       <a class="btn ghost" id="install" data-play href="#" aria-disabled="true" data-goatcounter-click="play-partilha">Em breve no Google Play</a>
-      <a class="btn ghost" id="web" href="app/">Usar a versão web</a>
+      <a class="btn ghost" id="web" href="app/" data-web hidden>Usar a versão web</a>
       <p class="note">O lembrete vai dentro do próprio link: não passa por nenhum servidor.</p>
     </div>
   </main>
@@ -120,7 +120,7 @@
         document.getElementById('open').hidden = true;
       }
       if (window.MAMLY && MAMLY.playUrl) document.getElementById('install').textContent = L('Instalar o Mamly no Google Play', 'Get Mamly on Google Play');
-      else document.getElementById('noAppNote').textContent = L('O Mamly chega em breve ao Google Play. Entretanto, podes usar a versão web.', 'Mamly is coming to Google Play soon. Meanwhile, you can use the web version.');
+      else document.getElementById('noAppNote').textContent = (window.MAMLY && MAMLY.webApp) ? L('O Mamly chega em breve ao Google Play. Entretanto, podes usar a versão web.', 'Mamly is coming to Google Play soon. Meanwhile, you can use the web version.') : L('O Mamly chega em breve ao Google Play. Guarda este link e abre-o quando tiveres a app.', 'Mamly is coming to Google Play soon. Keep this link and open it once you have the app.');
       if (/[?&]semapp=1/.test(location.search)) document.getElementById('noAppNote').hidden = false;
     })();
   </script>
