@@ -36,7 +36,7 @@ A legenda leva o português primeiro e o inglês por baixo. No feed, o Instagram
 
 **Como publicar um carrossel:** **+** → Publicação → toca no ícone de **seleção múltipla** (os dois quadrados) → escolhe primeiro a imagem **-pt** e depois a **-en** → Seguinte → cola a legenda → Partilhar.
 
-Publica pela ordem de 1 a 5, um por dia ou de dois em dois dias.
+Publica pela ordem sugerida no fim desta lista (secção «Ordem sugerida para publicar»).
 Imagens em `store/out/instagram/` (1080×1350).
 
 ### 1 · Apresentação
@@ -176,6 +176,100 @@ Thank you so much 💛
 
 #mamly #testadores #betatesters #android #googleplay #phda #adhd
 ```
+
+
+### 6 · Todos os dias (medicação)
+```
+Tomar a medicação à mesma hora, todos os dias, sem falhar. 💊
+
+Dizes uma vez ao Mamly:
+🎙️ «Todos os dias às 9h tomar a medicação»
+
+E ele lembra-te em voz alta, todos os dias, até apagares o lembrete. Quando disseres «feito», fica feito o de hoje e amanhã volta a lembrar.
+
+Também percebe:
+🔁 «De segunda a sexta às 8h30 levar os miúdos à escola»
+🔁 «Às segundas e quintas às 18h ir ao ginásio»
+🔁 «Dia 5 de cada mês pagar a renda»
+
+🇬🇧
+Take your meds at the same time every day, without missing. 💊
+
+Tell Mamly once:
+🎙️ "Every day at 9 take my meds"
+
+It reminds you out loud every day until you delete it. Say "done" and today's is ticked off; tomorrow it's back.
+
+It also gets:
+🔁 "On weekdays at 8:30 take the kids to school"
+🔁 "Every Monday and Thursday at 6pm go to the gym"
+🔁 "On the 5th of every month pay the rent"
+
+#mamly #phda #adhd #medicação #medication #rotina #routine #lembretes #reminders
+```
+
+### 7 · Responde por voz
+```
+Mãos ocupadas? Telemóvel no bolso? Não faz mal. 🙌
+
+Quando o aviso toca, o ecrã acende e o Mamly diz-te o que tens de fazer. Depois fica a ouvir:
+🎙️ «Feito!» → marcado
+🎙️ «Adia meia hora» → volta a lembrar daqui a 30 minutos
+
+Sem procurar botões, sem desbloquear o telemóvel.
+
+🇬🇧
+Hands full? Phone in your pocket? No problem. 🙌
+
+When a reminder rings, the screen lights up and Mamly tells you what to do. Then it listens:
+🎙️ "Done!" → ticked off
+🎙️ "Snooze half an hour" → back in 30 minutes
+
+No hunting for buttons, no unlocking your phone.
+
+#mamly #phda #adhd #maoslivres #handsfree #lembretes #reminders #produtividade
+```
+
+### 8 · Dois eventos ao mesmo tempo
+```
+Padaria até às 15h. Mecânico até às 17h. Os dois a tocar ao mesmo tempo? 😵‍💫
+
+O Mamly junta-os num só aviso:
+🔊 «Pedro, tens dois eventos: ir à padaria, até às 15 horas; e ir ao mecânico, até às 17 horas.»
+
+E tu respondes só ao que já fizeste:
+🎙️ «Feito padaria» → 🔊 «Boa! Falta: ir ao mecânico.»
+
+Menos interrupções, cabeça mais leve. 💛
+
+🇬🇧
+Bakery by 3pm. Mechanic by 5pm. Both ringing at once? 😵‍💫
+
+Mamly puts them in a single reminder:
+🔊 "Sam, you have two events: go to the bakery, until 3 PM; and go to the mechanic, until 5 PM."
+
+And you reply to what you've done:
+🎙️ "Done bakery" → 🔊 "Nice! Still to do: go to the mechanic."
+
+Fewer interruptions, lighter mind. 💛
+
+#mamly #phda #adhd #lembretes #reminders #organização #organization
+```
+
+---
+
+## Ordem sugerida para publicar
+Enquanto procuras testadores, publica primeiro o pedido de ajuda:
+1. **Post 1** (Apresentação)
+2. **Post 5** (Procuramos testadores)
+3. **Post 6** (Todos os dias, medicação)
+4. **Post 7** (Responde por voz)
+5. **Post 2** (Diz, não escrevas)
+6. **Post 3** (Modo mãe)
+7. **Post 8** (Dois eventos)
+8. **Post 4** (PHDA)
+
+Um por dia, ou de dois em dois dias. Quando a app estiver na Play Store, publica um post de lançamento (eu faço-o nessa altura) e troca o link da bio pelo da Play Store.
 
 ---
 

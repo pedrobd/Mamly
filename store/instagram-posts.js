@@ -59,6 +59,33 @@ const posts = {
     <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">Precisamos de pessoas com Android para testar durante 14 dias antes do lançamento.</p>
     <p style="font-size:46px;line-height:1.35;margin:40px 0 0;font-weight:800">Queres ajudar? Manda mensagem 💌</p>
     ${brand(C.plum)}</div>`,
+  '6-todos-os-dias': `<div class="p" style="background:${C.cream};color:${C.plum}">
+    <h1 style="font-size:104px">Todos os dias.<br><span class="hl">À mesma hora.</span></h1>
+    <div style="margin-top:60px;display:grid;gap:30px">
+      <div class="bubble" style="background:#fff;justify-self:end;max-width:800px;border-bottom-right-radius:12px;box-shadow:0 10px 30px rgba(51,10,42,.08)">🎙️ «Todos os dias às 9h tomar a medicação.»</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:820px;border-bottom-left-radius:12px">🔊 Combinado. Todos os dias, às 9 horas, lembro-te de: tomar a medicação. 💊</div>
+    </div>
+    <div style="margin-top:50px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['De segunda a sexta', 'Às segundas e quintas', 'Aos fins de semana', 'Dia 5 de cada mês'].map(t => `<span style="font-size:32px;font-weight:700;padding:14px 24px;border-radius:999px;background:${C.coralSoft}">🔁 ${t}</span>`).join('')}
+    </div>
+    ${brand(C.plum)}</div>`,
+  '7-responde-por-voz': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:100px">Nem precisas de <span style="color:${C.coral}">tocar</span> no telemóvel.</h1>
+    <div style="margin-top:70px;display:grid;gap:30px;max-width:920px">
+      <div class="bubble" style="background:${C.plum2}">🔊 «Pedro, está na hora: tirar a roupa da máquina.»</div>
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end">🎙️ «Feito!»</div>
+      <div class="bubble" style="background:${C.plum2}">🔊 «Boa! Menos um evento.»</div>
+    </div>
+    <p style="font-size:42px;line-height:1.35;margin:56px 0 0;opacity:.9">Mesmo com o ecrã bloqueado, o aviso aparece e ouve a tua resposta.</p>
+    ${brand(C.cream)}</div>`,
+  '8-dois-eventos': `<div class="p" style="background:${C.coralSoft};color:${C.plum}">
+    <h1 style="font-size:100px">Dois eventos à mesma hora?<br><span class="hl">Um só aviso.</span></h1>
+    <div style="margin-top:60px;display:grid;gap:30px">
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:880px;border-bottom-left-radius:12px">🔊 «Pedro, tens dois eventos: ir à padaria, até às 15 horas; e ir ao mecânico, até às 17 horas.»</div>
+      <div class="bubble" style="background:#fff;justify-self:end;border-bottom-right-radius:12px">🎙️ «Feito padaria.»</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:760px;border-bottom-left-radius:12px">🔊 «Boa! Falta: ir ao mecânico.»</div>
+    </div>
+    ${brand(C.plum)}</div>`,
 };
 
 const postsEn = {
@@ -99,6 +126,33 @@ const postsEn = {
     <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">We need Android users to test it for 14 days before launch.</p>
     <p style="font-size:46px;line-height:1.35;margin:40px 0 0;font-weight:800">Want to help? Send us a message 💌</p>
     ${brand(C.plum)}</div>`,
+  '6-todos-os-dias': `<div class="p" style="background:${C.cream};color:${C.plum}">
+    <h1 style="font-size:104px">Every day.<br><span class="hl">Same time.</span></h1>
+    <div style="margin-top:60px;display:grid;gap:30px">
+      <div class="bubble" style="background:#fff;justify-self:end;max-width:800px;border-bottom-right-radius:12px;box-shadow:0 10px 30px rgba(51,10,42,.08)">🎙️ “Every day at 9 take my meds.”</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:820px;border-bottom-left-radius:12px">🔊 Okay. Every day at 9 AM I’ll remind you: take my meds. 💊</div>
+    </div>
+    <div style="margin-top:50px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['On weekdays', 'Mondays & Thursdays', 'On weekends', 'The 5th of every month'].map(t => `<span style="font-size:32px;font-weight:700;padding:14px 24px;border-radius:999px;background:${C.coralSoft}">🔁 ${t}</span>`).join('')}
+    </div>
+    ${brand(C.plum)}</div>`,
+  '7-responde-por-voz': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:100px">You don’t even need to <span style="color:${C.coral}">touch</span> your phone.</h1>
+    <div style="margin-top:70px;display:grid;gap:30px;max-width:920px">
+      <div class="bubble" style="background:${C.plum2}">🔊 “Sam, it’s time: take the laundry out.”</div>
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end">🎙️ “Done!”</div>
+      <div class="bubble" style="background:${C.plum2}">🔊 “Nice! One less thing.”</div>
+    </div>
+    <p style="font-size:42px;line-height:1.35;margin:56px 0 0;opacity:.9">Even with the screen locked, the reminder shows up and listens for your reply.</p>
+    ${brand(C.cream)}</div>`,
+  '8-dois-eventos': `<div class="p" style="background:${C.coralSoft};color:${C.plum}">
+    <h1 style="font-size:100px">Two events at once?<br><span class="hl">One reminder.</span></h1>
+    <div style="margin-top:60px;display:grid;gap:30px">
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:880px;border-bottom-left-radius:12px">🔊 “Sam, you have two events: go to the bakery, until 3 PM; and go to the mechanic, until 5 PM.”</div>
+      <div class="bubble" style="background:#fff;justify-self:end;border-bottom-right-radius:12px">🎙️ “Done bakery.”</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:760px;border-bottom-left-radius:12px">🔊 “Nice! Still to do: go to the mechanic.”</div>
+    </div>
+    ${brand(C.plum)}</div>`,
 };
 
 (async () => {
@@ -106,7 +160,7 @@ const postsEn = {
   const b = await chromium.launch();
   const all = [];
   for (const [name, html] of Object.entries(posts)) {
-    const dark = name.startsWith('3-');
+    const dark = name.startsWith('3-') || name.startsWith('7-');
     all.push([name + '-pt', html.replace(/<\/div>$/, `<div class="swipe" style="color:${dark ? C.cream : C.plum}${name.startsWith('1-') ? ';top:100px;bottom:auto' : ''}">English →</div></div>`)]);
     all.push([name + '-en', postsEn[name]]);
   }
