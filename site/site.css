@@ -152,7 +152,11 @@ section { max-width: 1120px; margin: 0 auto; padding: 72px 20px; }
 @media (max-width: 600px) { .gallery { margin: 0 -16px; padding: 30px 16px 16px; scroll-padding: 0 16px; } }
 .gallery figcaption { margin-top: 14px; font-size: 15px; color: var(--ink-2); }
 .gallery figcaption b { color: var(--ink); }
-@media (min-width: 1180px) { .gallery { justify-content: center; } }
+/* Computador: os 5 ecrãs lado a lado, sem deslizar (centrar uma faixa que transborda cortava o 1.º ecrã) */
+@media (min-width: 1000px) {
+  .screens .gallery { grid-auto-flow: row; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 22px; overflow: visible; margin: 0; padding: 40px 0 0; scroll-snap-type: none; }
+  .screens .gallery figcaption { font-size: 14px; }
+}
 
 /* funcionalidades */
 .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 34px; }
