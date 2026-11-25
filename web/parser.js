@@ -238,9 +238,14 @@
     const task = restoreCase(cleanTask(s), String(input));
     // "diz o meu nome", "diz bebe água": a voz diz exatamente isso, sem "Lembrete:"
     const sayM = task.match(/^(?:diz|dizer|fala|falar|repete|repetir)(?:-me)?\s+(?:que\s+)?(.+)$/i);
+    // janela de tempo dita (para «não me incomodes das 15h às 16h», «até às 17h», «durante 1 hora»)
+    const w0 = rStart || start || null;
+    const win = rEnd ? { from: rStart || now, to: rEnd }
+      : hasDeadline ? { from: w0 || now, to: end }
+      : forMs ? { from: w0 || now, to: (w0 || now) + forMs } : null;
     return {
       task, interval: once ? null : interval, firstAt, end: once ? null : end, once, hasDeadline,
-      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow,
+      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow, win,
     };
   }
 

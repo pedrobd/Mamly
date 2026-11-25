@@ -232,9 +232,14 @@
     const task = restoreCase(cleanTask(s), String(input));
     // "say my name", "say drink water": the voice says exactly that
     const sayM = task.match(/^(?:say|tell me|repeat)\s+(?:that\s+)?(.+)$/i);
+    // janela de tempo dita (para «não me incomodes das 15h às 16h», «até às 17h», «durante 1 hora»)
+    const w0 = rStart || start || null;
+    const win = rEnd ? { from: rStart || now, to: rEnd }
+      : hasDeadline ? { from: w0 || now, to: end }
+      : forMs ? { from: w0 || now, to: (w0 || now) + forMs } : null;
     return {
       task, interval: once ? null : interval, firstAt, end: once ? null : end, once, hasDeadline,
-      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow,
+      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow, win,
     };
   }
 

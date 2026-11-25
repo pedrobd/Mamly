@@ -105,7 +105,17 @@
       .filter(e => !(r.quietUntil && e.kind === 'regular' && e.at < r.quietUntil))
       // horas de silêncio: só calam as repetições automáticas (não na 1.ª hora depois de criar o lembrete)
       .filter(e => !(e.kind === 'regular' && inQuiet(e.at) && e.at - (r.createdAt || 0) > 60 * MIN))
+      .map(dndShift).filter(Boolean)
       .sort((a, b) => a.at - b.at);
+  }
+  // «não me incomodes das 15h às 16h»: as repetições calam-se; o que tem hora marcada toca no fim
+  const dndNow = () => (settings.dnd && settings.dnd.to > Date.now() ? settings.dnd : null);
+  function dndShift(e) {
+    // depois de acabar, a janela continua a contar (senão o que foi calado voltava a tocar de uma vez)
+    const d = settings.dnd && settings.dnd.to > Date.now() - 864e5 ? settings.dnd : null;
+    if (!d || e.at < d.from || e.at >= d.to) return e;
+    if (e.kind === 'regular' || e.kind === 'final') return null;
+    return { at: d.to, kind: e.kind };
   }
   function inQuiet(t) {
     if (!settings.quietOn) return false;
@@ -418,8 +428,10 @@
 
   const GROUP_MS = 5 * MIN; // lembretes repetidos que iam tocar nos 5 min seguintes juntam-se ao mesmo aviso
   const inQueue = (r) => queue.some(q => q.items.some(x => x.r === r));
+  let dndShown = false;
   function tick() {
     const now = Date.now();
+    if (dndShown !== !!dndNow()) { dndShown = !!dndNow(); renderDnd(); }
     let changed = false;
     const fired = [];
     reminders.forEach(r => {
@@ -720,6 +732,8 @@
         || /^what(?:'s| is| do i have| have i got)\b|^(?:list|read|tell me)\b.*\b(?:reminders|tasks|things)\b|^(?:what are )?my reminders/.test(t)) {
       return readList();
     }
+    if (DND_OFF_RE.test(t)) return stopDnd(true);
+    if (DND_RE.test(t) && !/\b(?:lembra|lembrar|avisa-me (?:de|para|que)|remind)\b/.test(t)) return startDnd(text);
     const doneM = t.match(/^(?:já\s+)?(?:fiz|feito|terminei|acabei|já fui)\s+(?:o|a|de|que)?\s*(.+)$/)
       || t.match(/^(?:i\s+)?(?:did|done|finished|completed|i've done)\s+(?:the\s+|with\s+)?(.+)$/);
     if (doneM) {
@@ -743,6 +757,50 @@
       { label: L('Desfazer', 'Undo'), fn: () => { removeReminder(r); speak(L('Desfeito.', 'Undone.')); } },
     ]);
     await speak(confirmation(r));
+  }
+
+  // ---------- não incomodar (por voz) ----------
+  const DND_RE = /n[ãa]o\s+(?:me\s+)?(?:incomodes|incomode|chateies|interrompas|avises)|n[ãa]o\s+incomodar|modo\s+(?:de\s+)?sil[êe]ncio|sem\s+avisos|n[ãa]o\s+quero\s+(?:ser\s+incomodad[oa]|avisos)|\b(?:do\s+not\s+disturb|don'?t\s+disturb|no\s+reminders|leave\s+me\s+alone|quiet\s+time)\b/;
+  const DND_OFF_RE = /(?:j[áa]\s+)?podes\s+(?:voltar\s+a\s+)?(?:incomodar|avisar|falar)|(?:desliga|acaba|cancela|termina|tira)r?\s+(?:o\s+)?(?:modo\s+)?(?:n[ãa]o\s+incomodar|sil[êe]ncio)|\byou\s+can\s+(?:disturb|remind)\s+me\b|\b(?:turn\s+off|cancel|end|stop)\s+(?:the\s+)?(?:do\s+not\s+disturb|quiet\s+time)\b/;
+  async function startDnd(text) {
+    const now = Date.now();
+    const s = ' ' + text.toLowerCase()
+      .replace(/(?:na|durante a)\s+próxima\s+hora|(?:for\s+)?the\s+next\s+hour/g, ' durante 1 hora ')
+      .replace(/(?:for\s+)?an\s+hour/g, ' for 1 hour ')
+      .replace(/(?:durante\s+)?uma\s+hora/g, ' durante 1 hora ') + ' ';
+    const p = (EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser).parse(s, { defaultInterval: 60 });
+    let from = now, to = null;
+    if (p.win && p.win.to > now) { from = Math.max(now, p.win.from || now); to = p.win.to; }
+    else if (p.once && p.firstAt > now && /\b(?:at[ée]|until|till)\b/.test(s)) to = p.firstAt;
+    if (!to) to = now + 60 * MIN;
+    const old = settings.dnd;
+    if (old && old.to <= now) { reminders.forEach(r => { if (!r.done) r.lastAt = Math.max(r.lastAt || 0, old.to); }); save(); }
+    settings.dnd = { from, to };
+    saveSettings(); render();
+    const later = from > now + MIN;
+    toast(later ? L('Não incomodar: ' + hm(from) + '–' + hm(to), 'Do not disturb: ' + hm(from) + '–' + hm(to))
+                : L('Não incomodar até às ' + hm(to), 'Do not disturb until ' + hm(to)),
+      [{ label: L('Cancelar', 'Cancel'), fn: () => stopDnd(false) }]);
+    nativeLog(L('Ouvi', 'Heard') + ': «' + text + '» → ' + L('não incomodar ', 'do not disturb ') + hm(from) + '–' + hm(to));
+    await speak(later
+      ? L('Combinado. Das ' + sayTime(from) + ' às ' + sayTime(to) + ' não te incomodo.', 'Okay. From ' + sayTime(from) + ' to ' + sayTime(to) + " I won't disturb you.")
+      : L('Combinado. Até às ' + sayTime(to) + ' não te incomodo.', "Okay. I won't disturb you until " + sayTime(to) + '.'));
+  }
+  async function stopDnd(say) {
+    const had = !!dndNow();
+    // fecha a janela agora: o que estava adiado toca já, as repetições caladas não voltam
+    if (had) settings.dnd = { from: Math.min(settings.dnd.from, Date.now()), to: Date.now() };
+    saveSettings(); render();
+    if (say) await speak(had ? L('Pronto, já te volto a avisar.', "Okay, I'll remind you again.") : L('Não estava a pausar os avisos.', "Reminders weren't paused."));
+  }
+  function renderDnd() {
+    const d = dndNow(), bar = $('dndBar');
+    if (!bar) return;
+    bar.hidden = !d;
+    if (!d) return;
+    $('dndText').textContent = d.from > Date.now()
+      ? L('Não incomodar das ' + hm(d.from) + ' às ' + hm(d.to), 'Do not disturb ' + hm(d.from) + '–' + hm(d.to))
+      : L('Não incomodar até às ' + hm(d.to), 'Do not disturb until ' + hm(d.to));
   }
 
   function findByWords(phrase) {
@@ -847,6 +905,7 @@
   }
 
   function render() {
+    renderDnd();
     const open = reminders.filter(r => !r.done).sort((a, b) => {
       const na = nextEvent(a), nb = nextEvent(b);
       return (na ? na.at : 9e15) - (nb ? nb.at : 9e15);
@@ -1168,6 +1227,7 @@
     if (b.dataset.act === 'undo') { r.done = false; r.lastAt = Date.now(); save(); render(); }
     else if (b.dataset.act === 'delete') removeReminder(r);
   });
+  $('dndCancel').addEventListener('click', () => stopDnd(false));
   $('clearDone').addEventListener('click', () => { reminders = reminders.filter(r => !r.done); save(); render(); });
 
   $('alert').addEventListener('click', (e) => {
@@ -1524,7 +1584,7 @@
     '. A app não tem contas, não tem publicidade e não envia os teus lembretes para lado nenhum.': ". The app has no accounts, no ads, and doesn't send your reminders anywhere.",
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
-    'Testar voz': 'Test voice', 'Olá! Eu sou o Mamly 💛': "Hi! I'm Mamly 💛", 'Dizes-me o que tens de fazer e eu lembro-te': 'Tell me what you need to do and I’ll remind you', 'em voz alta': 'out loud', ', à hora certa. E insisto até fazeres.': ', right on time. And I’ll keep at it until it’s done.', 'Como te chamas? (a voz chama-te pelo nome)': 'What’s your name? (the voice will call you by it)', 'Seguinte': 'Next', 'Fala comigo como falas com alguém': 'Talk to me like you’d talk to a friend', 'Toca no microfone e diz, por exemplo:': 'Tap the microphone and say, for example:', '«Daqui a 20 minutos tirar a roupa da máquina»': '“In 20 minutes take the laundry out”', '«Todos os dias às 9h tomar a medicação»': '“Every day at 9 take my meds”', '«De hora a hora até às 17h ir ao mecânico»': '“Every hour until 5pm go to the mechanic”', 'Quando o aviso tocar, podes responder': 'When a reminder rings, you can reply', '«feito»': '“done”', 'ou': 'or', '«adia 15 minutos»': '“snooze 15 minutes”', 'Para tocar com o ecrã desligado': 'To ring with the screen off', 'O Android precisa de algumas autorizações. Toca em cada uma, faz o que diz e volta aqui:': 'Android needs a few permissions. Tap each one, do what it says and come back:', 'Para veres os avisos. Toca em «Permitir».': 'So you can see reminders. Tap “Allow”.', 'Para tocar à hora certa. Liga «Permitir alarmes e lembretes».': 'So it rings on time. Turn on “Allow setting alarms and reminders”.', 'Para o Android não desligar o Mamly. Toca em «Utilização da bateria» (ou «Bateria») e escolhe «Sem restrições» ou «Não otimizar».': 'So Android doesn’t shut Mamly down. Tap “Battery usage” (or “Battery”) and choose “Unrestricted” or “Don’t optimize”.', 'Para falares os lembretes. Toca em «Permitir».': 'So you can speak your reminders. Tap “Allow”.', 'Notificações': 'Notifications', 'Alarmes e lembretes': 'Alarms & reminders', 'Funcionar em segundo plano': 'Run in the background', 'Microfone': 'Microphone', 'Começar': 'Start', 'Horas de silêncio': 'Quiet hours', '· Não repetir avisos de noite': "· Don't repeat reminders at night", 'Das': 'From', 'Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.': 'Reminders set for a specific time (e.g. “at 7”, “every day at 9”) always ring.', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
+    'Testar voz': 'Test voice', 'Olá! Eu sou o Mamly 💛': "Hi! I'm Mamly 💛", 'Dizes-me o que tens de fazer e eu lembro-te': 'Tell me what you need to do and I’ll remind you', 'em voz alta': 'out loud', ', à hora certa. E insisto até fazeres.': ', right on time. And I’ll keep at it until it’s done.', 'Como te chamas? (a voz chama-te pelo nome)': 'What’s your name? (the voice will call you by it)', 'Seguinte': 'Next', 'Fala comigo como falas com alguém': 'Talk to me like you’d talk to a friend', 'Toca no microfone e diz, por exemplo:': 'Tap the microphone and say, for example:', '«Daqui a 20 minutos tirar a roupa da máquina»': '“In 20 minutes take the laundry out”', '«Todos os dias às 9h tomar a medicação»': '“Every day at 9 take my meds”', '«De hora a hora até às 17h ir ao mecânico»': '“Every hour until 5pm go to the mechanic”', 'Quando o aviso tocar, podes responder': 'When a reminder rings, you can reply', '«feito»': '“done”', 'ou': 'or', '«adia 15 minutos»': '“snooze 15 minutes”', 'Para tocar com o ecrã desligado': 'To ring with the screen off', 'O Android precisa de algumas autorizações. Toca em cada uma, faz o que diz e volta aqui:': 'Android needs a few permissions. Tap each one, do what it says and come back:', 'Para veres os avisos. Toca em «Permitir».': 'So you can see reminders. Tap “Allow”.', 'Para tocar à hora certa. Liga «Permitir alarmes e lembretes».': 'So it rings on time. Turn on “Allow setting alarms and reminders”.', 'Para o Android não desligar o Mamly. Toca em «Utilização da bateria» (ou «Bateria») e escolhe «Sem restrições» ou «Não otimizar».': 'So Android doesn’t shut Mamly down. Tap “Battery usage” (or “Battery”) and choose “Unrestricted” or “Don’t optimize”.', 'Para falares os lembretes. Toca em «Permitir».': 'So you can speak your reminders. Tap “Allow”.', 'Notificações': 'Notifications', 'Alarmes e lembretes': 'Alarms & reminders', 'Funcionar em segundo plano': 'Run in the background', 'Microfone': 'Microphone', 'Começar': 'Start', 'Horas de silêncio': 'Quiet hours', 'Para uma pausa, diz ao microfone: «não me incomodes das 15h às 16h» ou «durante 1 hora».': 'For a break, tell the mic: “don’t disturb me from 3 to 4pm” or “for 1 hour”.', 'Não incomodar': 'Do not disturb', '· Não repetir avisos de noite': "· Don't repeat reminders at night", 'Das': 'From', 'Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.': 'Reminders set for a specific time (e.g. “at 7”, “every day at 9”) always ring.', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
     'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram', 'Apoiantes do Mamly': 'Mamly supporters', 'Este espaço pode ser teu': 'This space could be yours', 'Queres apoiar o projeto? Fala connosco.': 'Want to support the project? Get in touch.',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',

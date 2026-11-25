@@ -63,6 +63,12 @@
       <div id="nextBarWrap" class="next-bar" hidden><i id="nextBar"></i></div>
     </section>
 
+    <div id="dndBar" class="dnd-bar" hidden>
+      <span class="dnd-moon" aria-hidden="true">🌙</span>
+      <span id="dndText">Não incomodar</span>
+      <button id="dndCancel" type="button" class="link-btn">Cancelar</button>
+    </div>
+
     <section class="list-wrap">
       <div class="list-head">
         <h2>Hoje e a seguir</h2>
@@ -318,6 +324,7 @@
           <label>Até às <input id="sQuietTo" type="time" value="08:00"></label>
         </div>
         <p class="quiet-hint">Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.</p>
+        <p class="quiet-hint">Para uma pausa, diz ao microfone: «não me incomodes das 15h às 16h» ou «durante 1 hora».</p>
       </div>
       <label class="toggle" id="sAlarmWrap" hidden><input id="sAlarm" type="checkbox"> <span>Usar o volume do alarme (ouve-se mesmo com o telemóvel em silêncio)</span></label>
       <label class="toggle"><input id="sListen" type="checkbox"> <span>Depois do aviso, ouvir a resposta (<q>feito</q>, <q>adia 15 minutos</q>)</span></label>
