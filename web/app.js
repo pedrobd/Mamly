@@ -13,7 +13,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
 
   // ---------- língua ----------
   // 'auto' segue a língua do telemóvel: português se for pt-*, inglês em todas as outras.
@@ -741,7 +741,7 @@
       if (r) { await markDone(r, true); return; }
     }
 
-    const p = (EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser).parse(text, { defaultInterval: settings.defaultInterval });
+    const p = (EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser).parse(text, { defaultInterval: 60 });
     const r = {
       id: Math.random().toString(36).slice(2, 10),
       text: p.task, interval: p.interval, firstAt: p.firstAt, end: p.end,
@@ -1135,7 +1135,6 @@
   function openSettings() {
     $('sName').value = settings.name;
     $('sRate').value = settings.rate; $('sRateOut').textContent = settings.rate.toFixed(2) + '×';
-    $('sInterval').value = String(settings.defaultInterval);
     $('sRepeat').value = String(settings.repeat);
     $('sChime').checked = settings.chime;
     $('sListen').checked = settings.listenAfter;
@@ -1172,7 +1171,6 @@
     settings.name = $('sName').value.trim();
     if (NATIVE) settings.nativeVoice = $('sVoice').value; else settings.voiceURI = $('sVoice').value;
     settings.rate = parseFloat($('sRate').value);
-    settings.defaultInterval = parseInt($('sInterval').value, 10);
     settings.repeat = parseInt($('sRepeat').value, 10);
     settings.chime = $('sChime').checked;
     settings.listenAfter = $('sListen').checked;
