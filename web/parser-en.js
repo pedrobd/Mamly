@@ -93,6 +93,16 @@
   const DOWRE_EN = '(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday)s?';
   const dowOfEn = (w) => DOW_EN[w.replace(/s$/, '')];
 
+  // dias até uma data («30 de novembro», «dia 5», «30/11»); se já passou, é no próximo mês/ano
+  function dateOffset(d, mo, y, now) {
+    const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
+    const Y = y != null ? (y < 100 ? 2000 + y : y) : t0.getFullYear();
+    const M = mo != null ? mo : t0.getMonth();
+    let t = new Date(Y, M, d);
+    if (t < t0 && y == null) t = mo == null ? new Date(Y, M + 1, d) : new Date(Y + 1, M, d);
+    return Math.max(0, Math.round((t - t0) / 864e5));
+  }
+
   function parse(input, opts) {
     opts = opts || {};
     const now = opts.now != null ? opts.now : Date.now();
@@ -131,6 +141,20 @@
     if (!recur && !dayOffset) {
       const wd = cut(new RegExp('\\s(?:on|this|next|on next)\\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=[\\s,.!?])'));
       if (wd) { const d = dowOfEn(wd[1]); const diff = (d - new Date(now).getDay() + 7) % 7; dayOffset = diff === 0 ? 7 : diff; }
+    }
+
+    // a date: "on November 30", "on the 30th of November", "on the 30th"
+    if (!recur && !dayOffset) {
+      const MON = '(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec)';
+      const mi = (w) => ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(w.slice(0, 3));
+      let dm;
+      if ((dm = cut(new RegExp('\\s(?:on )?(?:the )?(\\d{1,2})(?:st|nd|rd|th)? (?:of )?' + MON + '(?:,? (\\d{4}))?(?=[\\s,.!?])')))) {
+        dayOffset = dateOffset(+dm[1], mi(dm[2]), dm[3] ? +dm[3] : null, now);
+      } else if ((dm = cut(new RegExp('\\s(?:on )?' + MON + ' (?:the )?(\\d{1,2})(?:st|nd|rd|th)?(?:,? (\\d{4}))?(?=[\\s,.!?])')))) {
+        dayOffset = dateOffset(+dm[2], mi(dm[1]), dm[3] ? +dm[3] : null, now);
+      } else if ((dm = cut(/\s(?:on )?the (\d{1,2})(?:st|nd|rd|th)(?=[\s,.!?])/))) {
+        dayOffset = dateOffset(+dm[1], null, null, now);
+      }
     }
 
     // interval

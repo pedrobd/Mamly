@@ -51,7 +51,7 @@
       .replace(/e um quarto/g, 'e 15')
       .replace(/menos um quarto/g, 'menos 15');
     // números por extenso só quando estão num contexto de horas/minutos
-    s = s.replace(new RegExp('((?:[àa]s|pelas?|cada|daqui a|dentro de|em|de|at[ée](?: [àa]s?| ao)?|das?|antes das?)\\s+)(' + NUMPHRASE + ')(?=[\\s,.!?])', 'g'),
+    s = s.replace(new RegExp('((?:[àa]s|pelas?|cada|daqui a|dentro de|em|de|dia|at[ée](?: [àa]s?| ao)?|das?|antes das?)\\s+)(' + NUMPHRASE + ')(?=[\\s,.!?])', 'g'),
       (m, pre, num) => pre + phraseToDigits(num));
     s = s.replace(new RegExp('(\\s)(' + NUMPHRASE + ')(?=\\s+(?:horas?|minutos?|min|h|segundos?|seg)\\b)', 'g'),
       (m, pre, num) => pre + phraseToDigits(num));
@@ -98,6 +98,16 @@
 
   const toMin = (n, unit) => /^s/.test(unit) ? n / 60 : /^h/.test(unit) ? n * 60 : n;
 
+  // dias até uma data («30 de novembro», «dia 5», «30/11»); se já passou, é no próximo mês/ano
+  function dateOffset(d, mo, y, now) {
+    const t0 = new Date(now); t0.setHours(0, 0, 0, 0);
+    const Y = y != null ? (y < 100 ? 2000 + y : y) : t0.getFullYear();
+    const M = mo != null ? mo : t0.getMonth();
+    let t = new Date(Y, M, d);
+    if (t < t0 && y == null) t = mo == null ? new Date(Y, M + 1, d) : new Date(Y + 1, M, d);
+    return Math.max(0, Math.round((t - t0) / 864e5));
+  }
+
   function parse(input, opts) {
     opts = opts || {};
     const now = opts.now != null ? opts.now : Date.now();
@@ -133,6 +143,22 @@
     if (!recur && !dayOffset) {
       const wd = cut(new RegExp('\\s(?:na|no|nesta|neste|esta|este|na próxima|no próximo|próxima|próximo)\\s+(' + DOWRE_PT + ')(?=[\\s,.!?])(?!\\s+(?:vez|vezes|parte|via|mão|metade|opção|hipótese|oportunidade))'));
       if (wd) { const d = dowOf(wd[1]); if (d != null) { const diff = (d - new Date(now).getDay() + 7) % 7; dayOffset = diff === 0 ? 7 : diff; } }
+    }
+
+    // uma data: «no dia 30 de novembro», «a 5 de dezembro de 2027», «dia 30», «30/11»
+    if (!recur && !dayOffset) {
+      const MES = '(janeiro|fevereiro|março|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)';
+      const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      const pre = '\\s(?:no |para o |a |em |dia |no dia |para o dia )?';
+      let dm;
+      if ((dm = cut(new RegExp(pre + '(\\d{1,2})º? de ' + MES + '(?: de (\\d{4}))?(?=[\\s,.!?])')))) {
+        const mi = MESES.indexOf(dm[2] === 'marco' ? 'março' : dm[2]);
+        dayOffset = dateOffset(+dm[1], mi, dm[3] ? +dm[3] : null, now);
+      } else if ((dm = cut(new RegExp(pre + '(\\d{1,2})/(\\d{1,2})(?:/(\\d{2,4}))?(?=[\\s,.!?])')))) {
+        dayOffset = dateOffset(+dm[1], +dm[2] - 1, dm[3] ? +dm[3] : null, now);
+      } else if ((dm = cut(/\s(?:no |para o |a )?dia (\d{1,2})(?=[\s,.!?])/))) {
+        dayOffset = dateOffset(+dm[1], null, null, now);
+      }
     }
 
     // intervalo

@@ -35,7 +35,8 @@
     if (diff === 0) return '';
     if (diff === 1) return L('amanhã ', 'tomorrow ');
     if (diff === -1) return L('ontem ', 'yesterday ');
-    return d.toLocaleDateString(L('pt-PT', 'en-GB'), { weekday: 'long', day: 'numeric' }) + ' ';
+    // mais de uma semana: diz também o mês («segunda-feira, 30 de novembro»)
+    return d.toLocaleDateString(L('pt-PT', 'en-GB'), Math.abs(diff) > 6 ? { weekday: 'long', day: 'numeric', month: 'long' } : { weekday: 'long', day: 'numeric' }) + ' ';
   };
   const sayTime = (t) => {
     const d = new Date(t), h = d.getHours(), m = d.getMinutes();
