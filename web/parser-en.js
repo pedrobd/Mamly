@@ -37,6 +37,7 @@
     s = s.replace(/\sin\s+(?:about|around|roughly|approximately|like|some)\s+(?=\d)/g, ' in ')
       .replace(/(\d)\s*m(?=[\s,.!?])/g, '$1 minutes').replace(/(\d)\s*mins?(?=[\s,.!?])/g, '$1 minutes');
     s = s.replace(/\b(?:noon|midday)\b/g, '12:00').replace(/\bmidnight\b/g, '23:59');
+    s = s.replace(/(\sat\s+\d{1,2})\s+(\d{2})(?=[\s,.!?])/g, '$1:$2'); // "at 12 30"
     s = s.replace(/\bhourly\b/g, 'every 60 minutes').replace(/\bevery other hour\b/g, 'every 120 minutes')
       .replace(/\b(?:a\s+)?half(?:\s+an)?\s+hour\b/g, '30 minutes').replace(/\b(?:a\s+)?quarter(?:\s+of)?(?:\s+an)?\s+hour\b/g, '15 minutes')
       .replace(/\bhalf a minute\b/g, '30 seconds')
@@ -208,6 +209,11 @@
     let once = false, firstAt;
     if (!interval && !hasDeadline && atT) {
       once = true; firstAt = atT;
+    } else if (!interval && !hasDeadline && !forMs && !rStart && !rEnd && !start) {
+      // sem pedir repetição, avisa uma vez só (no início da parte do dia, amanhã às 9h, ou daqui a 1 hora)
+      once = true;
+      firstAt = period && atHour(PERIOD[period][0]) > now ? atHour(PERIOD[period][0])
+        : dayOffset > 0 ? atHour(9) : now + defaultInterval * 60e3;
     } else {
       if (!interval) interval = defaultInterval;
       if (!start && period && atHour(PERIOD[period][0]) > now) start = atHour(PERIOD[period][0]);

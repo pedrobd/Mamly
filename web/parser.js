@@ -37,7 +37,9 @@
     s = s.replace(/\sdaqui\s+(?=(?:uns|umas|\d|' + ALLNUM + '))/g, ' daqui a ');
     s = s.replace(new RegExp('\\s(?:uns|umas|cerca de|mais ou menos|aproximadamente|sensivelmente)\\s+(?=\\d|(?:' + ALLNUM + ')\\s)', 'g'), ' ');
     s = s.replace(/(\d)\s*m(?=[\s,.!?])/g, '$1 minutos').replace(/(\d)\s*mins?(?=[\s,.!?])/g, '$1 minutos');
+    s = s.replace(/\s(?:ao|o)\s+meio[- ]dia/g, ' às 12h').replace(/\s(?:à|a)\s+meia[- ]noite/g, ' às 23h59');
     s = s.replace(/meio[- ]dia/g, '12h').replace(/meia[- ]noite/g, '23h59');
+    s = s.replace(/(\s(?:[àa]s|pelas?)\s+\d{1,2})\s+(\d{2})(?=[\s,.!?])/g, '$1:$2'); // «às 12 30»
     s = s.replace(/de meia em meia hora/g, 'a cada 30 minutos')
       .replace(/de quarto em quarto de hora/g, 'a cada 15 minutos')
       .replace(/de hora (?:a|em) hora|todas as horas|hora a hora/g, 'a cada 60 minutos')
@@ -213,6 +215,11 @@
     let once = false, firstAt;
     if (!interval && !hasDeadline && atT) {
       once = true; firstAt = atT;
+    } else if (!interval && !hasDeadline && !forMs && !rStart && !rEnd && !start) {
+      // sem pedir repetição, avisa uma vez só (no início da parte do dia, amanhã às 9h, ou daqui a 1 hora)
+      once = true;
+      firstAt = period && atHour(PERIOD[period][0]) > now ? atHour(PERIOD[period][0])
+        : dayOffset > 0 ? atHour(9) : now + defaultInterval * 60e3;
     } else {
       if (!interval) interval = defaultInterval;
       if (!start && period && atHour(PERIOD[period][0]) > now) start = atHour(PERIOD[period][0]);
