@@ -35,3 +35,14 @@ window.MAMLY = {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
 })();
+
+// menu hambúrguer (telemóvel)
+(function () {
+  const nav = document.querySelector('.nav'), btn = nav && nav.querySelector('.nav-toggle');
+  if (!btn) return;
+  const set = (open) => { nav.classList.toggle('open', open); btn.setAttribute('aria-expanded', open); };
+  btn.addEventListener('click', (e) => { e.stopPropagation(); set(!nav.classList.contains('open')); });
+  nav.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => set(false)));
+  document.addEventListener('click', (e) => { if (!nav.contains(e.target)) set(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') set(false); });
+})();
