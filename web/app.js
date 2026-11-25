@@ -13,7 +13,6 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const FIRST_RUN = (() => { try { return !localStorage.getItem(SKEY) && !localStorage.getItem(KEY); } catch (e) { return false; } })();
   const settings = Object.assign({ name: '', voiceURI: '', rate: 1, defaultInterval: 60, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
 
   // ---------- língua ----------
@@ -1633,7 +1632,9 @@
     }
   });
   $('welcomeDlg').addEventListener('close', () => { if (!settings.onboarded) { settings.onboarded = true; saveSettings(); } });
-  if (FIRST_RUN && !settings.onboarded && !location.hash.includes('r=')) {
+  // aparece uma vez a quem ainda não a viu (também a quem já usava a app antes de haver introdução,
+  // ou a quem o Android repôs os dados de uma cópia de segurança)
+  if (!settings.onboarded && !location.hash.includes('r=')) {
     $('wName').value = settings.name || '';
     welcomeStep(1);
     $('welcomeDlg').showModal();

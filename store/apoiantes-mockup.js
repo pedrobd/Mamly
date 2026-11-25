@@ -39,7 +39,7 @@ const CSS = `
     await p.clock.install({ time: new Date(2026, 10, 23, 13, 35) });
     await p.addInitScript(() => { window.AndroidBridge = { version(){return '3.4'}, log(){}, voices(){return '[]'}, setVoice(){}, speak(t,r,tok){ setTimeout(()=>__native.onSpeakDone(tok),5); }, stopSpeaking(){}, listen(){}, stopListening(){}, sync(){}, takeActions(){ return '[]'; }, cancelNotification(){}, keepScreenOn(){}, testNow(){}, diag(){ return '{}'; }, status(){ return '{"notifications":true,"exact":true,"battery":true,"tts":true}'; }, openBatterySettings(){}, openNotificationSettings(){}, openAlarmSettings(){}, openVoiceInstall(){}, openTtsSettings(){}, share(){}, takeSharedLink(){ return ''; } }; });
     await p.goto(URL);
-    await p.evaluate(() => { localStorage.clear(); localStorage.setItem('lembretes.settings.v1', JSON.stringify({ name: 'Pedro', momMode: true })); });
+    await p.evaluate(() => { localStorage.clear(); localStorage.setItem('lembretes.settings.v1', JSON.stringify({ name: 'Pedro', momMode: true, onboarded: true })); });
     await p.reload();
     if (withReminders) for (const t of ['De 30 em 30 minutos das 13h às 17h avisa-me para pagar a conta da luz', 'Daqui a 20 minutos tirar a roupa da máquina', 'Amanhã às 9 ligar ao dentista'])
       { await p.evaluate(t => window.__lembretes.handleInput(t), t); await p.clock.runFor(300); }

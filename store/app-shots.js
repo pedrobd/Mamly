@@ -42,7 +42,7 @@ const LANGS = {
         window.AndroidBridge = { version(){return '3.0'}, log(){}, voices(){return '[]'}, setVoice(){}, speak(t,r,tok){ setTimeout(()=>__native.onSpeakDone(tok),5); }, stopSpeaking(){}, listen(){}, stopListening(){}, sync(){}, takeActions(){ return '[]'; }, cancelNotification(){}, keepScreenOn(){}, testNow(){}, diag(){ return '{}'; }, status(){ return '{"notifications":true,"exact":true,"battery":true,"tts":true}'; }, openBatterySettings(){}, openNotificationSettings(){}, openAlarmSettings(){}, openVoiceInstall(){}, openTtsSettings(){}, share(){}, takeSharedLink(){ return ''; } };
       });
       await page.goto(URL);
-      await page.evaluate((name) => { localStorage.clear(); localStorage.setItem('lembretes.settings.v1', JSON.stringify({ name, momMode: true })); }, T.name);
+      await page.evaluate((name) => { localStorage.clear(); localStorage.setItem('lembretes.settings.v1', JSON.stringify({ name, momMode: true, onboarded: true })); }, T.name);
       await page.reload();
       for (const t of T.say) { await page.evaluate(t => window.__lembretes.handleInput(t), t); await page.clock.runFor(300); }
       await page.clock.runFor(10000);
