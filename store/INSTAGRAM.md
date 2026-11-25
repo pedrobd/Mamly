@@ -256,6 +256,70 @@ Fewer interruptions, lighter mind. 💛
 #mamly #phda #adhd #lembretes #reminders #organização #organization
 ```
 
+### 9 · Não me incomodes
+```
+Reunião, consulta, sesta, ou simplesmente uma hora de sossego? 🤫
+
+Diz ao Mamly:
+🎙️ «Não me incomodes das 15h às 16h»
+🔊 «Combinado. Das 15 horas às 16 horas não te incomodo.»
+
+As repetições calam-se durante esse tempo. O que tinha hora marcada não se perde: avisa-te quando a pausa acabar.
+Também dá: «não me incomodes durante 1 hora» ou «até às 17h». E para voltar: «já podes incomodar».
+
+🇬🇧
+Meeting, appointment, nap, or just an hour of peace? 🤫
+
+Tell Mamly:
+🎙️ "Don't disturb me from 3 to 4pm"
+🔊 "Okay. From 3 PM to 4 PM I won't disturb you."
+
+Repeats go quiet in that window. Anything set for that time isn't lost: it reminds you when the break ends.
+Also works: "do not disturb for 1 hour" or "until 5pm". To undo: "you can disturb me".
+
+#mamly #phda #adhd #naoincomodar #donotdisturb #foco #focus #lembretes #reminders
+```
+
+### 10 · Datas
+```
+Consulta daqui a duas semanas? Renda no dia 2? Aniversário da avó a 5 de dezembro? 📅
+
+É só dizer a data:
+🎙️ «No dia 30 de novembro às 15h lembra-me para ir ao supermercado»
+🔊 «Combinado. Segunda-feira, 30 de novembro, às 15 horas, lembro-te de ir ao supermercado.»
+
+Também percebe «a 5 de dezembro», «dia 2 às 10h» ou «15/12 às 9h». Se não disseres a hora, avisa às 9h desse dia.
+
+🇬🇧
+Appointment in two weeks? Rent on the 2nd? Grandma's birthday on December 5th? 📅
+
+Just say the date:
+🎙️ "On November 30 at 3pm remind me to go to the supermarket"
+🔊 "Okay. Monday, 30 November, at 3 PM, I'll remind you to go to the supermarket."
+
+It also gets "on December 5th", "on the 2nd at 10" or "Dec 15 at 9am". No time? It reminds you at 9am that day.
+
+#mamly #phda #adhd #agenda #calendar #organização #organization #lembretes #reminders
+```
+
+### 11 · Modo noite
+```
+De noite, ninguém insiste. 🌙
+
+Das 23h às 8h, o Mamly não repete avisos (escolhes tu o horário nas definições). Podes dormir descansado: o «de hora a hora beber água» fica para amanhã.
+
+Mas o que marcaste para uma hora certa, como «todos os dias às 7h tomar a medicação», toca sempre. ⏰
+
+🇬🇧
+At night, no nagging. 🌙
+
+From 11pm to 8am, Mamly doesn't repeat reminders (you pick the hours in settings). Sleep easy: "drink water every hour" can wait until tomorrow.
+
+But anything set for a specific time, like "every day at 7 take my meds", always rings. ⏰
+
+#mamly #phda #adhd #sono #sleep #rotina #routine #lembretes #reminders
+```
+
 ---
 
 ## Ordem sugerida para publicar
@@ -268,6 +332,9 @@ Enquanto procuras testadores, publica primeiro o pedido de ajuda:
 6. **Post 3** (Modo mãe)
 7. **Post 8** (Dois eventos)
 8. **Post 4** (PHDA)
+9. **Post 10** (Datas)
+10. **Post 9** (Não me incomodes)
+11. **Post 11** (Modo noite)
 
 Um por dia, ou de dois em dois dias. Quando a app estiver na Play Store, publica um post de lançamento (eu faço-o nessa altura) e troca o link da bio pelo da Play Store.
 

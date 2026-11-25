@@ -86,6 +86,30 @@ const posts = {
       <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:760px;border-bottom-left-radius:12px">🔊 «Boa! Falta: ir ao mecânico.»</div>
     </div>
     ${brand(C.plum)}</div>`,
+  '9-nao-me-incomodes': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:104px">Precisas de <span style="color:${C.coral}">sossego</span>? 🤫</h1>
+    <div style="margin-top:70px;display:grid;gap:30px">
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end;max-width:820px;border-bottom-right-radius:12px">🎙️ «Não me incomodes das 15h às 16h.»</div>
+      <div class="bubble" style="background:${C.plum2};max-width:860px;border-bottom-left-radius:12px">🔊 «Combinado. Das 15 horas às 16 horas não te incomodo.»</div>
+    </div>
+    <p style="font-size:42px;line-height:1.35;margin:56px 0 0;opacity:.9">As repetições calam-se. O que tinha hora marcada avisa-te quando acabar. E basta dizer «já podes incomodar».</p>
+    ${brand(C.cream)}</div>`,
+  '10-datas': `<div class="p" style="background:${C.sun};color:${C.plum}">
+    <h1 style="font-size:92px">Daqui a uma semana?<br>Daqui a um mês?</h1>
+    <div style="margin-top:48px;display:grid;gap:30px">
+      <div class="bubble" style="background:#fff;justify-self:end;max-width:840px;border-bottom-right-radius:12px">🎙️ «No dia 30 de novembro às 15h lembra-me para ir ao supermercado.»</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:860px;border-bottom-left-radius:12px">🔊 «Combinado. Segunda-feira, 30 de novembro, às 15 horas, lembro-te de ir ao supermercado.»</div>
+    </div>
+    <div style="margin-top:36px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['📅 A 5 de dezembro', '📅 Dia 2 às 10h', '📅 15/12 às 9h'].map(t => `<span style="font-size:32px;font-weight:700;padding:14px 24px;border-radius:999px;background:${C.cream}">${t}</span>`).join('')}
+    </div>
+    ${brand(C.plum)}</div>`,
+  '11-modo-noite': `<div class="p" style="background:#1b0716;color:${C.cream}">
+    <div style="position:absolute;right:100px;bottom:200px;font-size:260px;line-height:1">🌙</div>
+    <h1 style="font-size:110px">De noite,<br><span style="color:${C.sun}">ninguém insiste.</span></h1>
+    <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">Das 23h às 8h, o Mamly não repete avisos. Escolhes tu o horário.</p>
+    <p style="font-size:46px;line-height:1.35;margin:36px 0 0;max-width:880px">O despertador da medicação às 7h? <b style="color:${C.sun}">Esse toca sempre.</b></p>
+    ${brand(C.cream)}</div>`,
 };
 
 const postsEn = {
@@ -153,6 +177,30 @@ const postsEn = {
       <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:760px;border-bottom-left-radius:12px">🔊 “Nice! Still to do: go to the mechanic.”</div>
     </div>
     ${brand(C.plum)}</div>`,
+  '9-nao-me-incomodes': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:104px">Need some <span style="color:${C.coral}">quiet</span>? 🤫</h1>
+    <div style="margin-top:70px;display:grid;gap:30px">
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end;max-width:820px;border-bottom-right-radius:12px">🎙️ “Don’t disturb me from 3 to 4pm.”</div>
+      <div class="bubble" style="background:${C.plum2};max-width:860px;border-bottom-left-radius:12px">🔊 “Okay. From 3 PM to 4 PM I won’t disturb you.”</div>
+    </div>
+    <p style="font-size:42px;line-height:1.35;margin:56px 0 0;opacity:.9">Repeats go quiet. Anything set for that time reminds you when it ends. Just say “you can disturb me”.</p>
+    ${brand(C.cream)}</div>`,
+  '10-datas': `<div class="p" style="background:${C.sun};color:${C.plum}">
+    <h1 style="font-size:92px">Next week?<br>Next month?</h1>
+    <div style="margin-top:48px;display:grid;gap:30px">
+      <div class="bubble" style="background:#fff;justify-self:end;max-width:840px;border-bottom-right-radius:12px">🎙️ “On November 30 at 3pm remind me to go to the supermarket.”</div>
+      <div class="bubble" style="background:${C.plum};color:${C.cream};max-width:860px;border-bottom-left-radius:12px">🔊 “Okay. Monday, 30 November, at 3 PM, I’ll remind you to go to the supermarket.”</div>
+    </div>
+    <div style="margin-top:36px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['📅 On December 5th', '📅 On the 2nd at 10', '📅 Dec 15 at 9am'].map(t => `<span style="font-size:32px;font-weight:700;padding:14px 24px;border-radius:999px;background:${C.cream}">${t}</span>`).join('')}
+    </div>
+    ${brand(C.plum)}</div>`,
+  '11-modo-noite': `<div class="p" style="background:#1b0716;color:${C.cream}">
+    <div style="position:absolute;right:100px;bottom:200px;font-size:260px;line-height:1">🌙</div>
+    <h1 style="font-size:110px">At night,<br><span style="color:${C.sun}">no nagging.</span></h1>
+    <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">From 11pm to 8am, Mamly doesn’t repeat reminders. You pick the hours.</p>
+    <p style="font-size:46px;line-height:1.35;margin:36px 0 0;max-width:880px">Your 7am meds reminder? <b style="color:${C.sun}">That one always rings.</b></p>
+    ${brand(C.cream)}</div>`,
 };
 
 (async () => {
@@ -160,7 +208,7 @@ const postsEn = {
   const b = await chromium.launch();
   const all = [];
   for (const [name, html] of Object.entries(posts)) {
-    const dark = name.startsWith('3-') || name.startsWith('7-');
+    const dark = /^(3|7|9|11)-/.test(name);
     all.push([name + '-pt', html.replace(/<\/div>$/, `<div class="swipe" style="color:${dark ? C.cream : C.plum}${name.startsWith('1-') ? ';top:100px;bottom:auto' : ''}">English →</div></div>`)]);
     all.push([name + '-en', postsEn[name]]);
   }
