@@ -378,6 +378,14 @@ button { cursor: pointer; }
   height: 52px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--bg);
   color: var(--ink); font-weight: 600; font-size: 16px; width: 100%;
 }
+/* menus e campos de hora/dia: o mesmo recuo do texto que nos outros campos e a seta afastada da borda */
+.dlg select, .dlg input[type="time"], .dlg input[type="date"] {
+  -webkit-appearance: none; appearance: none; text-align: left;
+  padding-right: 46px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237D6476' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 18px center; background-size: 14px;
+}
+.dlg input[type="time"]::-webkit-calendar-picker-indicator, .dlg input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; right: 0; width: 46px; height: 100%; cursor: pointer; }
+.dlg input[type="time"], .dlg input[type="date"] { position: relative; }
+.dlg input[type="time"]::-webkit-date-and-time-value, .dlg input[type="date"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .dlg input:focus, .dlg select:focus { outline: 2.5px solid var(--accent); outline-offset: 0; border-color: transparent; }
 .dlg input[type="range"] { width: 100%; accent-color: var(--accent); }
 .dlg output { color: var(--ink); }
