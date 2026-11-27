@@ -998,13 +998,19 @@
 
   function render() {
     renderDnd();
-    const open = reminders.filter(r => !r.done).sort((a, b) => {
+    const byNext = (a, b) => {
       const na = nextEvent(a), nb = nextEvent(b);
       return (na ? na.at : 9e15) - (nb ? nb.at : 9e15);
-    });
+    };
+    // os eventos do calendário ficam numa secção à parte (recolhida), e só os que ainda vão ter aviso
+    const open = reminders.filter(r => !r.done && !r.cal).sort(byNext);
+    const cal = reminders.filter(r => !r.done && r.cal && nextEvent(r)).sort(byNext);
     const done = reminders.filter(r => r.done).sort((a, b) => b.doneAt - a.doneAt);
     $('list').innerHTML = open.map(itemHTML).join('');
-    $('empty').hidden = open.length > 0;
+    $('calWrap').hidden = cal.length === 0;
+    $('calCount').textContent = String(cal.length);
+    $('calList').innerHTML = cal.map(itemHTML).join('');
+    $('empty').hidden = open.length > 0 || cal.length > 0;
     renderSupporters(open.length);
     $('count').textContent = open.length ? String(open.length) : '';
     $('doneWrap').hidden = done.length === 0;
@@ -1357,7 +1363,7 @@
   document.addEventListener('pointerdown', unlock, { capture: true });
   document.addEventListener('keydown', unlock, { capture: true });
 
-  $('list').addEventListener('click', (e) => {
+  const onListClick = (e) => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const r = reminders.find(x => x.id === b.closest('[data-id]').dataset.id); if (!r) return;
     if (b.dataset.act === 'done') {
@@ -1367,7 +1373,9 @@
     }
     else if (b.dataset.act === 'edit') openEdit(r);
     else if (b.dataset.act === 'say') speak(message(r, 'regular'));
-  });
+  };
+  $('list').addEventListener('click', onListClick);
+  $('calList').addEventListener('click', onListClick);
   $('doneList').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     const r = reminders.find(x => x.id === b.closest('[data-id]').dataset.id); if (!r) return;
@@ -1873,7 +1881,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
-    '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', 'Restaurar': 'Restore',
+    '📅 Do calendário': '📅 From your calendar', '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', 'Restaurar': 'Restore',
     'Dia': 'Day', 'Dias': 'Days', 'Em dias da semana': 'On days of the week', 'Das': 'From', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",

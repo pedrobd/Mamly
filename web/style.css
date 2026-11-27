@@ -521,3 +521,5 @@ button { cursor: pointer; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .toast.wide { width: min(360px, calc(100% - 32px)); flex-wrap: wrap; border-radius: 22px; justify-content: flex-end; padding: 14px 16px 10px; }
 .toast.wide span { flex: 1 1 100%; }
+.cal-wrap { margin-top: 18px; }
+.cal-wrap .list { margin-top: 10px; }
