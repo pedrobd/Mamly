@@ -42,6 +42,49 @@ public class MainActivity extends Activity {
     Dictation dictation;
     static final int REQ_MIC = 2;
     static final int REQ_CAL = 3;
+    static final int REQ_BACKUP_SAVE = 11, REQ_BACKUP_OPEN = 12;
+    private String pendingBackup = null;
+
+    /** Cópia de segurança: o Android pergunta onde guardar (Drive, Transferências…). */
+    void saveBackup(String json, String fileName) {
+        runOnUiThread(() -> {
+            pendingBackup = json;
+            Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("application/json").putExtra(Intent.EXTRA_TITLE, fileName);
+            try { startActivityForResult(i, REQ_BACKUP_SAVE); }
+            catch (Exception e) { pendingBackup = null; dispatch("onBackupSaved", "error"); }
+        });
+    }
+
+    /** Restaurar: escolhe o ficheiro da cópia; o texto vai para a página. */
+    void openBackup() {
+        runOnUiThread(() -> {
+            Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("*/*").putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"application/json", "text/plain", "application/octet-stream"});
+            try { startActivityForResult(i, REQ_BACKUP_OPEN); }
+            catch (Exception e) { dispatch("onBackupOpened", ""); }
+        });
+    }
+
+    private void backupResult(int requestCode, int resultCode, Intent data) {
+        Uri uri = resultCode == RESULT_OK && data != null ? data.getData() : null;
+        if (requestCode == REQ_BACKUP_SAVE) {
+            String json = pendingBackup; pendingBackup = null;
+            if (uri == null || json == null) { dispatch("onBackupSaved", "cancel"); return; }
+            try (java.io.OutputStream os = getContentResolver().openOutputStream(uri, "wt")) {
+                os.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                dispatch("onBackupSaved", "ok");
+            } catch (Exception e) { dispatch("onBackupSaved", "error"); }
+            return;
+        }
+        if (uri == null) { dispatch("onBackupOpened", ""); return; }
+        try (java.io.InputStream is = getContentResolver().openInputStream(uri)) {
+            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+            byte[] buf = new byte[8192]; int n, total = 0;
+            while ((n = is.read(buf)) > 0 && total < 5_000_000) { bo.write(buf, 0, n); total += n; }
+            dispatch("onBackupOpened", bo.toString("UTF-8"));
+        } catch (Exception e) { dispatch("onBackupOpened", ""); }
+    }
     private String pendingListenMode = null;
     private String pendingSharedLink = null;
     private boolean pageReady = false;
@@ -323,6 +366,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_BACKUP_SAVE || requestCode == REQ_BACKUP_OPEN) { backupResult(requestCode, resultCode, data); return; }
         if (requestCode != REQ_SPEECH) return;
         String text = null;
         if (resultCode == RESULT_OK && data != null) {

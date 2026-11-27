@@ -346,6 +346,15 @@
           <p class="quiet-hint">Só eventos com hora. O Mamly só lê o calendário: não muda nada e nada sai do telemóvel.</p>
         </div>
       </div>
+      <div class="quiet backup">
+        <p class="backup-title"><b>💾 Cópia de segurança</b></p>
+        <p class="quiet-hint">Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».</p>
+        <div class="backup-actions">
+          <button type="button" class="btn btn-soft" id="backupSave">Guardar cópia</button>
+          <button type="button" class="btn btn-ghost" id="backupOpen">Restaurar</button>
+        </div>
+        <input type="file" id="backupFile" accept=".json,application/json" hidden>
+      </div>
       <label class="toggle" id="sAlarmWrap" hidden><input id="sAlarm" type="checkbox"> <span>Usar o volume do alarme (ouve-se mesmo com o telemóvel em silêncio)</span></label>
       <label class="toggle"><input id="sListen" type="checkbox"> <span>Depois do aviso, ouvir a resposta (<q>feito</q>, <q>adia 15 minutos</q>)</span></label>
       <label class="toggle" id="sLockAlertWrap" hidden><input id="sLockAlert" type="checkbox"> <span>Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz</span></label>

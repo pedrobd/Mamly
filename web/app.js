@@ -1122,6 +1122,7 @@
   function toast(text, actions, ms) {
     const el = $('toast');
     el.innerHTML = '<span>' + esc(text) + '</span>';
+    el.classList.toggle('wide', text.length > 60 && !!(actions && actions.length));
     (actions || []).forEach(a => {
       const b = document.createElement('button');
       b.textContent = a.label;
@@ -1536,6 +1537,57 @@
     });
   }
 
+  // ---------- cópia de segurança (para mudar de telemóvel) ----------
+  function backupData() {
+    const st = Object.assign({}, settings);
+    delete st.calIds; delete st.calDone; delete st.dnd; // são deste telemóvel
+    return JSON.stringify({ app: 'mamly', v: 1, at: Date.now(), reminders: reminders.filter(r => !r.cal), settings: st });
+  }
+  function saveBackup() {
+    const name = 'mamly-copia-' + toDateInput(Date.now()) + '.json';
+    if (NATIVE && NATIVE.saveBackup) { NATIVE.saveBackup(backupData(), name); return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([backupData()], { type: 'application/json' }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    toast(L('Cópia guardada nas transferências.', 'Backup saved to your downloads.'));
+  }
+  function openBackup() {
+    if (NATIVE && NATIVE.openBackup) { NATIVE.openBackup(); return; }
+    $('backupFile').value = ''; $('backupFile').click();
+  }
+  function restoreBackup(text) {
+    if (!text) return;
+    let d = null;
+    try { d = JSON.parse(text); } catch (e) {}
+    if (!d || d.app !== 'mamly' || !Array.isArray(d.reminders)) { toast(L('Este ficheiro não é uma cópia do Mamly.', "This file isn't a Mamly backup.")); return; }
+    const list = d.reminders.filter(r => r && typeof r.id === 'string' && typeof r.text === 'string' && typeof r.firstAt === 'number' && !r.cal)
+      .map(r => Object.assign({}, r, { recur: r.recur ? validRecur(r.recur) : null }));
+    const open = list.filter(r => !r.done).length;
+    const when = d.at ? new Date(d.at).toLocaleDateString(L('pt-PT', 'en-GB'), { day: 'numeric', month: 'long' }) : '';
+    toast(L('Cópia' + (when ? ' de ' + when : '') + ' com ' + open + ' lembretes. Substituir os que tens agora?', 'Backup' + (when ? ' from ' + when : '') + ' with ' + open + ' reminders. Replace the ones you have now?'), [
+      { label: L('Restaurar', 'Restore'), fn: () => {
+        reminders = list.concat(reminders.filter(r => r.cal));
+        if (d.settings && typeof d.settings === 'object') {
+          const keep = { calOn: settings.calOn, calIds: settings.calIds, calDone: settings.calDone, dnd: settings.dnd, onboarded: true };
+          Object.keys(d.settings).forEach(k => { if (k in settings || k === 'onboarded') settings[k] = d.settings[k]; });
+          Object.assign(settings, keep);
+        }
+        saveSettings(); save(); render();
+        if ($('settingsDlg').open) openSettings();
+        toast(L('Pronto! Recuperei ' + open + ' lembretes.', 'Done! Restored ' + open + ' reminders.'));
+        speak(L('Pronto, recuperei os teus lembretes.', 'Done, I restored your reminders.'));
+      } },
+      { label: L('Cancelar', 'Cancel'), fn: () => {} },
+    ], 20000);
+  }
+  $('backupSave').addEventListener('click', saveBackup);
+  $('backupOpen').addEventListener('click', openBackup);
+  $('backupFile').addEventListener('change', () => {
+    const f = $('backupFile').files[0]; if (!f) return;
+    const rd = new FileReader(); rd.onload = () => restoreBackup(String(rd.result || '')); rd.readAsText(f);
+  });
+
   function syncNative() {
     if (!NATIVE) return;
     clearTimeout(syncTimer);
@@ -1628,6 +1680,11 @@
         if (!f) return;
         if (!text && err) f.reject(new Error(err)); else f.resolve(text || '');
       },
+      onBackupSaved(st) {
+        if (st === 'ok') toast(L('Cópia guardada. No telemóvel novo, abre o Mamly → Definições → Restaurar.', 'Backup saved. On your new phone, open Mamly → Settings → Restore.'));
+        else if (st === 'error') toast(L('Não consegui guardar a cópia. Tenta outro sítio.', "Couldn't save the backup. Try another place."));
+      },
+      onBackupOpened(text) { restoreBackup(text); },
       onPartial(text) { if (nativeListen && nativeListen.onInterim) nativeListen.onInterim(text); },
       onFired(id, kind, at) {
         delete nativeWatch[id];
@@ -1816,6 +1873,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
+    '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', 'Restaurar': 'Restore',
     'Dia': 'Day', 'Dias': 'Days', 'Em dias da semana': 'On days of the week', 'Das': 'From', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",

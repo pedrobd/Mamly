@@ -517,3 +517,7 @@ button { cursor: pointer; }
 .item-body .tag svg { flex: none; }
 .cal-count { margin: 12px 0 0; font-size: 14px; font-weight: 700; color: var(--accent); }
 .cal-count:empty { display: none; }
+.backup-title { margin: 0 0 4px; font-size: 16px; color: var(--ink); }
+.backup-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.toast.wide { width: min(360px, calc(100% - 32px)); flex-wrap: wrap; border-radius: 22px; justify-content: flex-end; padding: 14px 16px 10px; }
+.toast.wide span { flex: 1 1 100%; }

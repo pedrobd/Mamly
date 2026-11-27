@@ -131,6 +131,13 @@ public class Bridge {
     @JavascriptInterface
     public String calendarItems() { return CalendarSync.items(a).toString(); }
 
+    // ---------- cópia de segurança (ficheiro escolhido pela pessoa) ----------
+    @JavascriptInterface
+    public void saveBackup(String json, String fileName) { a.saveBackup(json, fileName); }
+
+    @JavascriptInterface
+    public void openBackup() { a.openBackup(); }
+
     /** Primeira abertura: pede a autorização do microfone sem começar a ouvir. */
     @JavascriptInterface
     public void requestMic() {
