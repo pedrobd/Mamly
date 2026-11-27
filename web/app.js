@@ -682,10 +682,50 @@
     save(); render();
     alertRemove(r);
     closeNotif(r.id);
-    if (spoken) await speak(pick(settings.momMode
-      ? (EN ? ["Well done! I'm proud of you.", "Good job, honey! That's the way.", "That's it, " + momName() + '! One less thing.']
-            : ['Muito bem! Estou orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos um evento.'])
-      : (EN ? ["Nice! It's done.", 'Well done, one less thing.', 'Done. Nice!'] : ['Boa! Está feito.', 'Muito bem, menos um evento.', 'Feito. Boa!'])));
+    const msg = praise();
+    celebrate(msg);
+    if (spoken) await speak(msg);
+  }
+
+  // ---------- recompensa ao fazer: uma frase positiva (cabeças com PHDA precisam deste «boa!») ----------
+  function doneToday() {
+    const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    return reminders.filter(r => (r.done && r.doneAt >= d0.getTime()) || (r.recur && r.lastDoneAt >= d0.getTime())).length;
+  }
+  function praise() {
+    const nm = settings.name, n = doneToday();
+    const hey = nm ? pick([nm + ', ', '', '']) : '';
+    const base = settings.momMode
+      ? (EN ? ["Well done! I'm so proud of you.", "Good job, honey! That's the way.", "That's my " + (nm || 'sweetheart') + '! One less thing.', "You see? You can do it. I'm proud.", "Wonderful, honey. Now take a breath."]
+            : ['Muito bem! Estou tão orgulhosa de ti.', 'Boa, coração! Assim é que é.', 'Isso mesmo, ' + momName() + '! Menos um evento.', 'Vês? Tu consegues. Que orgulho.', 'Lindo, meu amor. Agora respira um bocadinho.'])
+      : (EN ? ["Nice! It's done.", 'Well done, one less thing on your mind.', 'Done! You nailed it.', "That's it! Another one ticked off.", "Great job. Your brain says thanks.", 'Done and dusted!', 'Yes! You did it.', 'One less thing. Feels good, right?']
+            : ['Boa! Está feito.', 'Muito bem, menos um evento na cabeça.', 'Feito! Arrasaste.', 'Isso! Mais um riscado.', 'Excelente. A tua cabeça agradece.', 'Feito e bem feito!', 'Conseguiste! Que orgulho.', 'Menos uma coisa. Sabe bem, não sabe?']);
+    let out = pick(base);
+    if (!settings.momMode && hey && /^(Boa|Muito bem|Isso|Nice|Well done|Yes)/.test(out)) out = out.replace(/^(\S+?)([!,.])/, '$1, ' + nm + '$2');
+    // marcos do dia: o primeiro, o terceiro, o quinto…
+    const extra = n === 1 ? L(' Primeira do dia!', ' First one today!')
+      : n === 3 ? L(' Já vais em três hoje!', ' That\'s three today!')
+      : n === 5 ? L(' Cinco hoje. Estás imparável!', ' Five today. You\'re unstoppable!')
+      : n >= 10 && n % 5 === 0 ? L(' Já são ' + n + ' hoje. Incrível!', ' ' + n + ' today. Amazing!') : '';
+    return out + extra;
+  }
+  let cheerTimer = 0;
+  function celebrate(msg) {
+    try { navigator.vibrate && navigator.vibrate([18, 50, 28]); } catch (e) {}
+    const el = $('cheer'); if (!el) return;
+    $('cheerText').textContent = msg;
+    el.querySelectorAll('.cheer-bit').forEach(b => b.remove());
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduce) for (let i = 0; i < 14; i++) {
+      const b = document.createElement('i'); b.className = 'cheer-bit';
+      b.textContent = ['✦', '●', '★', '💛', '✓'][i % 5];
+      const a = (i / 14) * Math.PI * 2, d = 70 + Math.random() * 60;
+      b.style.setProperty('--x', Math.round(Math.cos(a) * d) + 'px'); b.style.setProperty('--y', Math.round(Math.sin(a) * d) + 'px');
+      b.style.animationDelay = Math.round(Math.random() * 90) + 'ms';
+      el.querySelector('.cheer-badge').appendChild(b);
+    }
+    el.hidden = false; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    clearTimeout(cheerTimer); cheerTimer = setTimeout(() => { el.hidden = true; el.classList.remove('go'); }, 2200);
   }
   async function snooze(r, mins, spoken) {
     r.snoozeAt = Date.now() + mins * MIN;

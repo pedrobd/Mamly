@@ -31,6 +31,8 @@ public class ActionReceiver extends BroadcastReceiver {
                     if (o != null && !rid.equals(o.optString("rid"))) keep.put(o);
                 }
                 Store.addAction(c, new JSONObject().put("type", "done").put("rid", rid).put("at", now));
+                Notif.channels(c);
+                Notif.praise(c, rid, e.optString("task"));
             } else if (SNOOZE.equals(intent.getAction())) {
                 long until = now + intent.getIntExtra("minutes", 10) * 60000L;
                 for (int i = 0; i < all.length(); i++) {

@@ -117,6 +117,31 @@ final class Notif {
         catch (SecurityException ignored) {}
     }
 
+    /** Carregaste «Feito» na notificação: uma mensagem positiva que desaparece sozinha (a recompensa). */
+    static void praise(Context c, String rid, String task) {
+        boolean en = Lang.en(c);
+        String name = Store.settings(c).optString("name", "").trim();
+        boolean mom = Store.settings(c).optBoolean("momMode", false);
+        String[] pt = mom ? new String[]{"Muito bem! Estou orgulhosa de ti 💛", "Boa, coração! Assim é que é 💛", "Vês? Tu consegues 💛"}
+                          : new String[]{"Boa! Está feito ✓", "Isso! Mais um riscado ✓", "Conseguiste! Que orgulho ✓", "Menos uma coisa na cabeça ✓", "Feito e bem feito ✓"};
+        String[] ens = mom ? new String[]{"Well done! I'm so proud of you 💛", "Good job, honey! 💛", "You see? You can do it 💛"}
+                           : new String[]{"Nice! It's done ✓", "Yes! Another one ticked off ✓", "You did it! ✓", "One less thing on your mind ✓", "Done and dusted ✓"};
+        String[] list = en ? ens : pt;
+        String title = list[new java.util.Random().nextInt(list.length)];
+        if (!name.isEmpty() && !mom) title = title.replaceFirst("^(\\S+?)([!,.])", "$1, " + name + "$2");
+        NotificationCompat.Builder b = new NotificationCompat.Builder(c, CH_SERVICE)
+                .setSmallIcon(R.drawable.ic_stat)
+                .setColor(0xFFFD726B)
+                .setContentTitle(title)
+                .setContentText(task)
+                .setContentIntent(openApp(c))
+                .setAutoCancel(true)
+                .setSilent(true)
+                .setTimeoutAfter(6000);
+        try { NotificationManagerCompat.from(c).notify(idFor(rid) + 50000, b.build()); }
+        catch (SecurityException ignored) {}
+    }
+
     static void cancel(Context c, String rid) {
         NotificationManagerCompat.from(c).cancel(idFor(rid));
     }
