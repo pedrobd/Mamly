@@ -112,6 +112,9 @@ final class CalendarSync {
                     long at = k.getTimeInMillis();
                     if (at > now + NEAR_MS && at < begin - HOUR) ats.put(new JSONObject().put("at", at).put("say", say(s, en, d, title, begin)));
                 }
+                if (leads.contains("0")) { // à hora do evento
+                    if (begin > now + NEAR_MS) ats.put(new JSONObject().put("at", begin).put("say", say(s, en, -1, title, begin)));
+                }
                 if (leads.contains("1h")) {
                     long at = begin - HOUR;
                     if (at > now + NEAR_MS) ats.put(new JSONObject().put("at", at).put("say", say(s, en, 0, title, begin)));
@@ -141,6 +144,8 @@ final class CalendarSync {
                      : who + "faltam " + days + " dias para: " + task + ", " + wd + " às " + t + ".";
         } else if (days == 1) {
             out = en ? who + "it's tomorrow: " + task + ", at " + t + "." : who + "é amanhã: " + task + ", às " + t + ".";
+        } else if (days < 0) {
+            out = en ? who + "it's time: " + task + "." : who + "está na hora: " + task + ".";
         } else {
             out = en ? who + "in one hour: " + task + ", at " + t + "." : who + "daqui a uma hora: " + task + ", às " + t + ".";
         }
