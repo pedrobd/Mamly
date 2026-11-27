@@ -86,6 +86,14 @@
     if (r.calAts) {
       // vem do calendário: os avisos de X dias / 1 hora antes do evento
       r.calAts.forEach(a => ev.push({ at: a.at, kind: 'once' }));
+    } else if (r.recur && r.recur.every) {
+      // «de hora a hora, de segunda a sexta, das 9h às 17h»: em cada um desses dias, de X em X minutos dentro da janela
+      const rc = r.recur, step = rc.every * MIN, u = rc.until || { h: 22, m: 0 };
+      const d0 = new Date(Math.max(r.lastAt || 0, Date.now() - 864e5)); d0.setHours(0, 0, 0, 0);
+      LembreteParser.nextRecur(rc, d0.getTime() - 1, 14).forEach(st => {
+        const e = new Date(st); e.setHours(u.h, u.m, 0, 0);
+        for (let t = st; t <= e.getTime() && ev.length < 400; t += step) if (t >= (r.createdAt || 0) - MIN) ev.push({ at: t, kind: 'regular' });
+      });
     } else if (r.recur) {
       // repete por dias: as próximas ~60 vezes, a partir do último aviso
       const from = Math.max(r.lastAt || 0, (r.createdAt || Date.now()) - 1, Date.now() - 864e5);
@@ -138,6 +146,10 @@
   const DAYS_PT = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
   const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const recurTime = (rc) => String(rc.h).padStart(2, '0') + ':' + String(rc.m).padStart(2, '0');
+  const recurUntil = (rc) => String(rc.until.h).padStart(2, '0') + ':' + String(rc.until.m).padStart(2, '0');
+  const hmToday = (h, m) => { const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime(); };
+  // «De segunda a sexta · De hora a hora, das 09:00 às 17:00» / «Todos os dias · 09:00»
+  const recurDesc = (rc) => cap(recurLabel(rc)) + ' · ' + (rc.every ? shortInterval(rc.every) + L(', das ', ', ') + recurTime(rc) + L(' às ', '–') + recurUntil(rc) : recurTime(rc));
   // «Todos os dias», «De segunda a sexta», «Às segundas e quintas», «Dia 5 de cada mês»
   function recurLabel(rc, spoken) {
     const and = (a) => a.length < 2 ? a[0] : a.slice(0, -1).join(', ') + L(' e ', ' and ') + a[a.length - 1];
@@ -146,13 +158,17 @@
     const d = rc.days.join();
     if (d === '1,2,3,4,5') return L('de segunda a sexta', 'on weekdays');
     if (d === '0,6') return L('aos fins de semana', 'on weekends');
+    // dias seguidos de segunda em diante: «de segunda a quinta»
+    const wk = rc.days.filter(x => x > 0);
+    if (wk.length >= 3 && wk.length === rc.days.length && wk[wk.length - 1] - wk[0] === wk.length - 1)
+      return EN ? DAYS_EN[wk[0]] + ' to ' + DAYS_EN[wk[wk.length - 1]] : 'de ' + DAYS_PT[wk[0]] + ' a ' + DAYS_PT[wk[wk.length - 1]];
     if (EN) return 'every ' + and(rc.days.map(x => DAYS_EN[x]));
     const plural = rc.days.map(x => DAYS_PT[x] + 's');
     return (rc.days.every(x => x === 0 || x === 6) ? 'aos ' : 'às ') + and(plural);
   }
   function describe(r) {
     if (r.cal) return '📅 ' + cap(dayWord(r.cal.begin) || L('hoje ', 'today ')) + L('às ', 'at ') + hm(r.cal.begin);
-    if (r.recur) return cap(recurLabel(r.recur)) + ' · ' + recurTime(r.recur);
+    if (r.recur) return recurDesc(r.recur);
     const day = dayWord(r.once ? r.firstAt : (r.end || r.firstAt));
     if (r.once) return (day ? cap(day) : L('Hoje ', 'Today ')) + L('às ', 'at ') + hm(r.firstAt) + L(' · uma vez', ' · once');
     let s = cap(sayInterval(r.interval));
@@ -406,6 +422,11 @@
   }
   function rawConfirmation0(r) {
     const task = lowerFirst(r.text);
+    if (r.recur && r.recur.every) {
+      const a = sayTime(hmToday(r.recur.h, r.recur.m)), b = sayTime(hmToday(r.recur.until.h, r.recur.until.m));
+      return EN ? 'Okay. ' + cap(recurLabel(r.recur)) + ', ' + sayInterval(r.recur.every) + ' from ' + a + ' to ' + b + ", I'll remind you: " + task + '.'
+                : 'Combinado. ' + cap(recurLabel(r.recur)) + ', ' + sayInterval(r.recur.every) + ', das ' + a + ' às ' + b + ', lembro-te de: ' + task + '.';
+    }
     if (r.recur) return EN
       ? 'Okay. ' + cap(recurLabel(r.recur)) + ' at ' + sayTime(r.firstAt) + " I'll remind you: " + task + '.'
       : 'Combinado. ' + cap(recurLabel(r.recur)) + ', às ' + sayTime(r.firstAt) + ', lembro-te de: ' + task + '.';
@@ -602,7 +623,7 @@
     $('alertDoneLabel').textContent = L('Feito', 'Done');
   }
   function alertMetaText(r) {
-    if (r.recur) return cap(recurLabel(r.recur)) + L(' às ', ' at ') + recurTime(r.recur);
+    if (r.recur) return r.recur.every ? recurDesc(r.recur) : cap(recurLabel(r.recur)) + L(' às ', ' at ') + recurTime(r.recur);
     return r.hasDeadline && r.end > Date.now() ? L('Tens até às ', 'You have until ') + hm(r.end) + L(' · faltam ', ' · ') + sayDuration(r.end - Date.now()) + L('', ' left')
       : !r.once && r.interval ? shortInterval(r.interval) + (r.end ? L(' até às ', ' until ') + hm(r.end) : '') : '';
   }
@@ -651,7 +672,9 @@
     if (r.recur) {
       // repete por dias: fica feito o de hoje (ou o próximo, se ainda não tocou nas próximas horas) e continua
       const nx = nextEvent(r);
-      r.lastAt = Math.max(r.lastAt || 0, Date.now(), nx && nx.at - Date.now() < 12 * 3600e3 ? nx.at : 0);
+      // de X em X dentro do dia: «feito» cala o resto de hoje
+      const endToday = r.recur.every ? hmToday(r.recur.until.h, r.recur.until.m) : 0;
+      r.lastAt = Math.max(r.lastAt || 0, Date.now(), endToday > Date.now() ? endToday : 0, !r.recur.every && nx && nx.at - Date.now() < 12 * 3600e3 ? nx.at : 0);
       r.snoozeAt = null; r.lastDoneAt = Date.now();
     } else { r.done = true; r.doneAt = Date.now(); }
     if (r.cal) calMarkDone(r);
@@ -830,6 +853,7 @@
     const open = reminders.filter(r => !r.done);
     if (!open.length) return speak(L('Não tens nada pendente. Boa!', 'You have nothing pending. Nice!'));
     const parts = open.map(r => {
+      if (r.recur && r.recur.every) return r.text + ', ' + recurLabel(r.recur) + ', ' + sayInterval(r.recur.every);
       if (r.recur) return r.text + ', ' + recurLabel(r.recur) + L(' às ', ' at ') + sayTime(r.firstAt);
       if (r.once) return r.text + ', ' + dayWord(r.firstAt) + L('às ', 'at ') + sayTime(r.firstAt);
       if (r.hasDeadline) return r.text + L(', até às ', ', by ') + sayTime(r.end);
@@ -957,7 +981,7 @@
     const st = status(r);
     const tags = [];
     if (r.cal) tags.push(`<span class="tag">📅 ${esc(cap(dayWord(r.cal.begin) || L('hoje ', 'today ')) + L('às ', 'at ') + hm(r.cal.begin))}</span>`);
-    else if (r.recur) tags.push(`<span class="tag">${ICON.repeat}${esc(cap(recurLabel(r.recur)))}</span>`);
+    else if (r.recur) tags.push(`<span class="tag">${ICON.repeat}${esc(cap(recurLabel(r.recur)) + (r.recur.every ? ' · ' + shortInterval(r.recur.every).toLowerCase() : ''))}</span>`);
     else if (r.once) tags.push(`<span class="tag">${ICON.bell}${L('Uma vez', 'Once')}</span>`);
     else tags.push(`<span class="tag">${ICON.repeat}${esc(shortInterval(r.interval))}</span>`);
     if (r.hasDeadline) tags.push(`<span class="tag deadline">${ICON.clock}${EN ? 'by ' + dayWord(r.end) : dayWord(r.end) + 'até '}${hm(r.end)}</span>`);
@@ -1056,10 +1080,27 @@
     const d = new Date(ref || Date.now()); d.setHours(h, m, 0, 0);
     return d.getTime();
   }
+  const setDays = (days) => document.querySelectorAll('#eDaysWrap [data-day]').forEach(b => b.setAttribute('aria-pressed', String(days.includes(+b.dataset.day))));
+  const getDays = () => [...document.querySelectorAll('#eDaysWrap [data-day][aria-pressed="true"]')].map(b => +b.dataset.day).sort();
+  document.querySelectorAll('#eDaysWrap [data-day]').forEach((b, i) => {
+    if (EN) { b.textContent = 'MTWTFSS'[i]; b.setAttribute('aria-label', DAYS_EN[+b.dataset.day]); }
+    b.addEventListener('click', () => b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')));
+  });
   function openEdit(r) {
     editing = r;
     $('eTask').value = r.text;
     $('eInterval').querySelectorAll('option[data-recur]').forEach(o => o.remove());
+    setDays([1, 2, 3, 4, 5]);
+    if (r.recur && r.recur.kind !== 'monthly') {
+      // todos os dias / dias da semana: escolhe-se nos botões
+      $('eInterval').value = 'days';
+      setDays(r.recur.kind === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : r.recur.days);
+      $('eStart').value = recurTime(r.recur);
+      $('eEnd').value = r.recur.every ? recurUntil(r.recur) : ''; $('eDeadline').checked = false;
+      syncEditFields();
+      $('editDlg').showModal();
+      return;
+    }
     if (r.recur) {
       const o = document.createElement('option'); o.value = 'recur'; o.dataset.recur = '1'; o.textContent = cap(recurLabel(r.recur));
       $('eInterval').appendChild(o); $('eInterval').value = 'recur';
@@ -1084,14 +1125,36 @@
     $('editDlg').showModal();
   }
   function syncEditFields() {
-    const once = $('eInterval').value === '0' || $('eInterval').value === 'recur';
-    $('eEndWrap').style.visibility = once ? 'hidden' : 'visible';
+    const v = $('eInterval').value, days = v === 'days';
+    const every = days && editing && editing.recur && editing.recur.every; // «de hora a hora, de segunda a sexta»
+    const once = v === '0' || v === 'recur' || days;
+    $('eEndWrap').style.visibility = once && !every ? 'hidden' : 'visible';
     $('eDeadline').closest('label').hidden = once;
-    $('eStartLabel').textContent = once ? L('Hora do aviso', 'Reminder time') : L('Próximo aviso', 'Next reminder');
-    $('eDateWrap').hidden = $('eInterval').value === 'recur';
+    $('eStartLabel').textContent = every ? L('Das', 'From') : once ? L('Hora do aviso', 'Reminder time') : L('Próximo aviso', 'Next reminder');
+    $('eDateWrap').hidden = v === 'recur' || days;
+    $('eDaysWrap').hidden = !days;
   }
   function saveEdit() {
     const r = editing; if (!r) return;
+    if ($('eInterval').value === 'days') {
+      const days = getDays().length ? getDays() : [0, 1, 2, 3, 4, 5, 6];
+      const [h, m] = ($('eStart').value || '09:00').split(':').map(Number);
+      const rc = days.length === 7 ? { kind: 'daily', h: h || 0, m: m || 0 } : { kind: 'weekly', days, h: h || 0, m: m || 0 };
+      if (r.recur && r.recur.every) {
+        rc.every = r.recur.every;
+        const [uh, um] = ($('eEnd').value || recurUntil(r.recur)).split(':').map(Number);
+        rc.until = { h: uh || 0, m: um || 0 };
+        if (rc.until.h * 60 + rc.until.m <= rc.h * 60 + rc.m) rc.until = { h: 23, m: 0 };
+      }
+      if (r.cal) { calMarkDone(r); delete r.cal; delete r.calAts; }
+      r.recur = rc; r.text = $('eTask').value.trim() || r.text;
+      r.once = false; r.interval = null; r.end = null; r.hasDeadline = false;
+      r.snoozeAt = null; r.quietUntil = null; r.done = false;
+      r.lastAt = Date.now();
+      r.firstAt = LembreteParser.nextRecur(rc, Date.now())[0];
+      save(); render(); toast(L('Guardado', 'Saved'));
+      return;
+    }
     if (r.recur && $('eInterval').value === 'recur') {
       const [h, m] = $('eStart').value.split(':').map(Number);
       r.text = $('eTask').value.trim() || r.text;
@@ -1573,6 +1636,11 @@
     return SHARE_BASE + '#r=' + b64url(JSON.stringify(data));
   }
   function validRecur(rc) {
+    const v = validRecur0(rc);
+    if (v && rc.every > 0 && rc.until) { v.every = Math.min(720, Math.max(1, +rc.every || 60)); v.until = { h: Math.min(23, Math.max(0, rc.until.h | 0)), m: Math.min(59, Math.max(0, rc.until.m | 0)) }; }
+    return v;
+  }
+  function validRecur0(rc) {
     if (!rc || typeof rc !== 'object' || !['daily', 'weekly', 'monthly'].includes(rc.kind)) return null;
     const h = Math.min(23, Math.max(0, rc.h | 0)), m = Math.min(59, Math.max(0, rc.m | 0));
     if (rc.kind === 'weekly') { const days = (Array.isArray(rc.days) ? rc.days : []).map(x => x | 0).filter(x => x >= 0 && x <= 6); return days.length ? { kind: 'weekly', days, h, m } : null; }
@@ -1680,7 +1748,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
-    'Dia': 'Day', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
+    'Dia': 'Day', 'Dias': 'Days', 'Em dias da semana': 'On days of the week', 'Das': 'From', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",
     'Agora não': 'Not now', 'Aceitar': 'Accept', 'Definições': 'Settings',

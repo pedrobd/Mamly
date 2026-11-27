@@ -502,3 +502,16 @@ button { cursor: pointer; }
 .dlg label.cal-hour { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
 .cal-hour input { width: auto; }
 #sCalPerm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+
+/* editar: dias da semana */
+.e-days { display: grid; gap: 7px; }
+.e-days-label { font-size: 13px; font-weight: 700; color: var(--muted); }
+.e-days-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.e-days-row button {
+  height: 44px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink);
+  font: inherit; font-weight: 800; font-size: 15px; cursor: pointer;
+}
+.e-days-row button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.item-body .tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-body .tag svg { flex: none; }

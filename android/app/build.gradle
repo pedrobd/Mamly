@@ -10,8 +10,8 @@ android {
         applicationId 'pt.pedrobd.lembrame'
         minSdk 26
         targetSdk 36
-        versionCode 46
-        versionName '3.25'
+        versionCode 47
+        versionName '3.26'
     }
 
     // A chave de assinatura não está no repositório em claro: o GitHub Actions desencripta

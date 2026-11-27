@@ -125,11 +125,13 @@
 
     // repetição por dias: «todos os dias», «de segunda a sexta», «às segundas e quintas», «aos fins de semana», «dia 5 de cada mês»
     let recur = null, recurPeriod = null, rm;
-    if ((rm = cut(/\s(?:todos os dias|diariamente|cada dia|todas as (manhãs|tardes|noites))(?=[\s,.!?])/))) {
+    if (cut(/\s(?:todos os dias|diariamente|cada dia)\s+(?:exceto|excepto|menos|tirando|sem|fora)\s+(?:ao |aos |o |os |no |nos |durante o )?(?:fim|fins) de semana(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
+    } else if ((rm = cut(/\s(?:todos os dias|diariamente|cada dia|todas as (manhãs|tardes|noites))(?=[\s,.!?])/))) {
       recur = { kind: 'daily' }; if (rm[1]) recurPeriod = rm[1].slice(0, -1);
     } else if (cut(/\s(?:de segunda a sexta(?:-feira)?|(?:nos |durante os |em )?dias (?:úteis|uteis|de semana)|durante a semana)(?=[\s,.!?])/)) {
       recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
-    } else if (cut(/\s(?:aos |ao |nos |todos os )?fins? de semana(?=[\s,.!?])/)) {
+    } else if (cut(/\s(?:aos |ao |nos |todos os )?(?:fim|fins) de semana(?=[\s,.!?])/)) {
       recur = { kind: 'weekly', days: [0, 6] };
     } else if ((rm = s.match(new RegExp('\\s(?:todas as|todos os|às|as|aos|cada|nas|nos)\\s+' + DOWRE_PT + '(?:\\s*(?:,|e)\\s*(?:às|as|aos|nas|nos|à|ao)?\\s*' + DOWRE_PT + ')*(?=[\\s,.!?])')))) {
       s = s.replace(rm[0], ' ');
@@ -195,6 +197,16 @@
       const tm = at ? timeFrom(at, per || 'manhã') : startM ? timeFrom(startM, per || 'manhã') : null;
       recur.h = tm ? tm.h : per ? PERIOD[per][0] + (per === 'tarde' ? 1 : per === 'noite' ? 2 : 0) : 9;
       recur.m = tm ? tm.m : 0;
+      if (interval) {
+        // «de hora a hora, de segunda a sexta, das 9h às 17h»: repete nesses dias, dentro dessa janela
+        recur.every = interval;
+        const ra = range ? timeFrom(range.slice(0, 5 + 1), period) : null, rb = range ? timeFrom([null].concat(range.slice(5 + 1, 2 * 5 + 1)), period) : null;
+        const dl = deadline ? timeFrom(deadline, period) : null;
+        if (ra && !at && !startM) { recur.h = ra.h; recur.m = ra.m; }
+        const u = rb || dl;
+        recur.until = u ? { h: u.h, m: u.m } : { h: dayEndHour, m: 0 };
+        if (recur.until.h * 60 + recur.until.m <= recur.h * 60 + recur.m) recur.until = { h: 23, m: 0 };
+      }
       const task0 = restoreCase(cleanTask(s), String(input));
       const say0 = task0.match(/^(?:diz|dizer|fala|falar|repete|repetir)(?:-me)?\s+(?:que\s+)?(.+)$/i);
       return { task: task0, interval: null, firstAt: nextRecur(recur, now)[0], end: null, once: false, hasDeadline: false,

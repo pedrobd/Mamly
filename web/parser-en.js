@@ -122,7 +122,9 @@
 
     // repeating by days: "every day", "on weekdays", "every monday and thursday", "on weekends", "on the 5th of every month"
     let recur = null, recurPeriod = null, rm;
-    if ((rm = cut(/\s(?:every ?day|daily|each day|every (morning|afternoon|evening|night))(?=[\s,.!?])/))) {
+    if (cut(/\s(?:every ?day|daily|each day)\s+(?:except|but not|apart from|other than)\s+(?:on |at |the )?weekends?(?=[\s,.!?])/)) {
+      recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
+    } else if ((rm = cut(/\s(?:every ?day|daily|each day|every (morning|afternoon|evening|night))(?=[\s,.!?])/))) {
       recur = { kind: 'daily' }; if (rm[1]) recurPeriod = rm[1] === 'night' ? 'evening' : rm[1];
     } else if (cut(/\s(?:on weekdays|every weekday|weekdays|(?:from )?monday to friday|during the week)(?=[\s,.!?])/)) {
       recur = { kind: 'weekly', days: [1, 2, 3, 4, 5] };
@@ -187,6 +189,16 @@
       const tm = at ? timeFrom(at, per || 'morning') : startM ? timeFrom(startM, per || 'morning') : null;
       recur.h = tm ? tm.h : per ? PERIOD[per][0] + (per === 'afternoon' ? 1 : per === 'evening' ? 2 : 0) : 9;
       recur.m = tm ? tm.m : 0;
+      if (interval) {
+        // «de hora a hora, de segunda a sexta, das 9h às 17h»: repete nesses dias, dentro dessa janela
+        recur.every = interval;
+        const ra = range ? timeFrom(range.slice(0, 4 + 1), period) : null, rb = range ? timeFrom([null].concat(range.slice(4 + 1, 2 * 4 + 1)), period) : null;
+        const dl = deadline ? timeFrom(deadline, period) : null;
+        if (ra && !at && !startM) { recur.h = ra.h; recur.m = ra.m; }
+        const u = rb || dl;
+        recur.until = u ? { h: u.h, m: u.m } : { h: dayEndHour, m: 0 };
+        if (recur.until.h * 60 + recur.until.m <= recur.h * 60 + recur.m) recur.until = { h: 23, m: 0 };
+      }
       const task0 = restoreCase(cleanTask(s), String(input));
       const say0 = task0.match(/^(?:say|tell me|repeat)\s+(?:that\s+)?(.+)$/i);
       return { task: task0, interval: null, firstAt: nextRecur(recur, now)[0], end: null, once: false, hasDeadline: false,
