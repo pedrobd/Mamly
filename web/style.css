@@ -374,7 +374,7 @@ button { cursor: pointer; }
 .dlg h2:focus { outline: none; }
 .dlg h2 { margin: 0; font-family: var(--display); font-size: 24px; letter-spacing: -.02em; }
 .dlg label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; color: var(--muted); }
-.dlg input[type="text"], .dlg input[type="time"], .dlg select {
+.dlg input[type="text"], .dlg input[type="time"], .dlg input[type="date"], .dlg select {
   height: 52px; padding: 0 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--bg);
   color: var(--ink); font-weight: 600; font-size: 16px; width: 100%;
 }

@@ -1050,6 +1050,7 @@
   // ---------- editar ----------
   let editing = null;
   const toTimeInput = (t) => hm(t);
+  const toDateInput = (t) => { const d = new Date(t); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
   function fromTimeInput(val, ref) {
     const [h, m] = val.split(':').map(Number);
     const d = new Date(ref || Date.now()); d.setHours(h, m, 0, 0);
@@ -1073,7 +1074,10 @@
       const o = document.createElement('option'); o.value = r.interval; o.textContent = L('De ' + r.interval + ' em ' + r.interval + ' min', 'Every ' + r.interval + ' min');
       $('eInterval').appendChild(o); $('eInterval').value = String(r.interval);
     }
-    $('eStart').value = toTimeInput(r.snoozeAt && r.snoozeAt > Date.now() ? r.snoozeAt : (nextEvent(r) || { at: r.firstAt }).at);
+    const at0 = r.snoozeAt && r.snoozeAt > Date.now() ? r.snoozeAt : (nextEvent(r) || { at: r.firstAt }).at;
+    $('eStart').value = toTimeInput(at0);
+    $('eDate').value = toDateInput(Math.max(at0, Date.now()));
+    $('eDate').min = toDateInput(Date.now());
     $('eEnd').value = r.end ? toTimeInput(r.end) : '';
     $('eDeadline').checked = !!r.hasDeadline;
     syncEditFields();
@@ -1084,6 +1088,7 @@
     $('eEndWrap').style.visibility = once ? 'hidden' : 'visible';
     $('eDeadline').closest('label').hidden = once;
     $('eStartLabel').textContent = once ? L('Hora do aviso', 'Reminder time') : L('Próximo aviso', 'Next reminder');
+    $('eDateWrap').hidden = $('eInterval').value === 'recur';
   }
   function saveEdit() {
     const r = editing; if (!r) return;
@@ -1098,9 +1103,13 @@
     }
     if (r.recur) r.recur = null; // passou a «uma vez» / «de X em X»
     const interval = parseFloat($('eInterval').value);
-    const ref = r.once ? r.firstAt : (r.end || r.firstAt);
+    // o dia escolhido (ou, se faltar, o dia que já tinha)
+    const dv = $('eDate').value;
+    const ref = dv ? new Date(dv.split('-').map(Number)[0], dv.split('-').map(Number)[1] - 1, dv.split('-').map(Number)[2]).getTime()
+                   : (r.once ? r.firstAt : (r.end || r.firstAt));
     let start = fromTimeInput($('eStart').value, ref);
-    if (start < Date.now() - MIN) start += 864e5;
+    while (start < Date.now() - MIN) start += 864e5; // dia ou hora que já passou: o próximo possível
+    if (r.cal) { calMarkDone(r); delete r.cal; delete r.calAts; } // editado à mão: deixa de vir do calendário
     r.text = $('eTask').value.trim() || r.text;
     r.once = interval === 0;
     r.interval = r.once ? null : interval;
@@ -1671,7 +1680,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
-    'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
+    'Dia': 'Day', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",
     'Agora não': 'Not now', 'Aceitar': 'Accept', 'Definições': 'Settings',
