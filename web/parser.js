@@ -250,12 +250,13 @@
     if (rel) atT = now + toMin(parseInt(rel[1], 10), rel[2]) * 60e3;
     if (!start && atT && interval) { start = atT; atT = null; }
 
-    let once = false, firstAt;
+    let once = false, firstAt, noTime = false;
     if (!interval && !hasDeadline && atT) {
       once = true; firstAt = atT;
     } else if (!interval && !hasDeadline && !forMs && !rStart && !rEnd && !start) {
       // sem pedir repetição, avisa uma vez só (no início da parte do dia, amanhã às 9h, ou daqui a 1 hora)
       once = true;
+      noTime = !period; // não disse a hora: a app pode perguntar
       firstAt = period && atHour(PERIOD[period][0]) > now ? atHour(PERIOD[period][0])
         : dayOffset > 0 ? atHour(9) : now + defaultInterval * 60e3;
     } else {
@@ -283,7 +284,7 @@
       : forMs ? { from: w0 || now, to: (w0 || now) + forMs } : null;
     return {
       task, interval: once ? null : interval, firstAt, end: once ? null : end, once, hasDeadline,
-      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow, win,
+      say: sayM ? sayM[1] : null, forMs: once ? null : forMs, fromNow, win, noTime,
     };
   }
 

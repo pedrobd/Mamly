@@ -758,7 +758,8 @@
 
   // ---------- criar a partir de texto/voz ----------
   let lastCreated = null;
-  async function handleInput(text) {
+  async function handleInput(text, opts) {
+    opts = opts || {};
     text = text.trim();
     if (!text) return;
     const t = text.toLowerCase();
@@ -786,6 +787,60 @@
     nativeLog(L('Ouvi', 'Heard') + ': «' + text + '» → ' + r.text + ' · ' + (r.once ? hm(r.firstAt) : (r.interval + ' min' + (r.end ? ' → ' + hm(r.end) : ''))));
     reminders.push(r);
     lastCreated = r;
+    save(); render();
+    // não disse a hora: pergunta («A que horas te lembro?»). O lembrete já fica criado (daqui a 1 hora) e só se acerta a hora.
+    if (p.noTime && !r.recur && !r.say) {
+      if (opts.typed || !CAN_LISTEN) {
+        toast(L('Adicionado: ', 'Added: ') + r.text + L(' · daqui a 1 hora', ' · in 1 hour'), [
+          { label: L('Escolher hora', 'Pick a time'), fn: () => openEdit(r) },
+          { label: L('Desfazer', 'Undo'), fn: () => { removeReminder(r); speak(L('Desfeito.', 'Undone.')); } },
+        ]);
+        await speak(L('Combinado. Lembro-te daqui a uma hora. Se quiseres outra hora, toca em escolher hora.', "Okay. I'll remind you in an hour. For another time, tap pick a time."));
+        return;
+      }
+      return askTime(r, text, p);
+    }
+    toast(L('Adicionado: ', 'Added: ') + r.text, [
+      { label: L('Editar', 'Edit'), fn: () => openEdit(r) },
+      { label: L('Desfazer', 'Undo'), fn: () => { removeReminder(r); speak(L('Desfeito.', 'Undone.')); } },
+    ]);
+    await speak(confirmation(r));
+  }
+
+  const NO_TIME_RE = /^(?:tanto faz|n[ãa]o sei|qualquer (?:hora|altura)|quando quiseres|whatever|any ?time|i don'?t know|don'?t know|doesn'?t matter|não interessa)/;
+  async function askTime(r, text, p) {
+    const tomorrow = r.firstAt - Date.now() > 12 * 3600e3;
+    await speak(settings.momMode
+      ? L('Está bem, ' + momName() + '. A que horas te lembro' + (tomorrow ? ', amanhã?' : '?'), 'Okay, ' + momName() + '. What time should I remind you' + (tomorrow ? ' tomorrow?' : '?'))
+      : L('Combinado. A que horas te lembro' + (tomorrow ? ', amanhã?' : '?'), 'Okay. What time should I remind you' + (tomorrow ? ' tomorrow?' : '?')));
+    if (!reminders.includes(r)) return;
+    let ans = '';
+    micBusy = true;
+    $('mic').classList.add('listening');
+    $('micLabel').textContent = L('A ouvir…', 'Listening…');
+    $('transcript').textContent = L('A que horas? Ex.: «às 6», «daqui a meia hora»', 'What time? E.g. “at 6”, “in half an hour”');
+    try { ans = await listen({ maxMs: 8000, onInterim: (t) => { $('transcript').textContent = '“' + t + '”'; } }); } catch (e) {}
+    micBusy = false;
+    $('mic').classList.remove('listening');
+    $('micLabel').textContent = L('Toca e fala', 'Tap and talk');
+    nativeLog(ans ? L('Hora: «', 'Time: “') + ans + L('»', '”') : L('Sem resposta à hora', 'No answer for the time'));
+    const keep = async (msg) => {
+      $('transcript').textContent = '';
+      toast(L('Adicionado: ', 'Added: ') + r.text + ' · ' + hm(r.firstAt), [{ label: L('Escolher hora', 'Pick a time'), fn: () => openEdit(r) }]);
+      await speak(msg);
+    };
+    if (!ans || NO_TIME_RE.test(ans.toLowerCase().trim())) {
+      return keep(L('Está bem, lembro-te daqui a uma hora.', "Okay, I'll remind you in an hour."));
+    }
+    $('transcript').textContent = '“' + ans + '”';
+    hideTranscriptSoon();
+    // junta a resposta ao que tinha dito: «ir ao supermercado» + «às 6» = «ir ao supermercado às 6»
+    const q = (EN && window.LembreteParserEN ? LembreteParserEN : LembreteParser).parse(text + ' ' + ans, { defaultInterval: 60 });
+    if (q.noTime || !reminders.includes(r)) {
+      return keep(L('Não percebi a hora. Fica para daqui a uma hora, e podes mudar em editar.', "I didn't catch the time. I'll remind you in an hour; you can change it in edit."));
+    }
+    Object.assign(r, { text: q.task || r.text, interval: q.interval, firstAt: q.firstAt, end: q.end, once: q.once, hasDeadline: q.hasDeadline,
+      forMs: q.forMs || null, recur: q.recur || null, said: text + ' · ' + ans, lastAt: 0 });
     save(); render();
     toast(L('Adicionado: ', 'Added: ') + r.text, [
       { label: L('Editar', 'Edit'), fn: () => openEdit(r) },
@@ -1277,7 +1332,7 @@
     e.preventDefault(); unlock();
     const v = $('typeInput').value; $('typeInput').value = '';
     $('transcript').textContent = '';
-    handleInput(v);
+    handleInput(v, { typed: true });
   });
   function setTyping(on) {
     $('typeForm').hidden = !on;
