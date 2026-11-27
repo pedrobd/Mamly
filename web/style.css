@@ -549,3 +549,13 @@ button { cursor: pointer; }
 @keyframes cheerOut { to { opacity: 0; transform: scale(.92); } }
 @keyframes cheerBit { 0% { opacity: 1; transform: translate(-50%, -50%) scale(.6); } 100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .cheer.go .cheer-badge, .cheer.go .cheer-text { animation: none; } }
+
+/* «Os avisos não tocam?» */
+.diag-box[open] { display: grid; gap: 10px; }
+.diag-box > .btn { justify-self: start; }
+.diag-simple { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+.diag-simple li { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.diag-simple .ok { color: var(--done-check); font-weight: 900; width: 18px; }
+.diag-simple .no { color: #E5484D; font-weight: 900; width: 18px; }
+.diag-simple button { margin-left: auto; background: none; border: 0; color: var(--accent); font: inherit; font-weight: 800; font-size: 14px; padding: 4px 0; cursor: pointer; }
+.diag-tech summary { font-size: 13px; color: var(--muted); cursor: pointer; }

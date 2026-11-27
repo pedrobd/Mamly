@@ -83,6 +83,18 @@ public class Bridge {
         });
     }
 
+    /** «Enviar diagnóstico»: abre o email/WhatsApp com o texto já pronto (vai para ola@mamly.app se for email). */
+    @JavascriptInterface
+    public void shareDiag(String text) {
+        a.runOnUiThread(() -> {
+            Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                    .putExtra(Intent.EXTRA_EMAIL, new String[]{Lang.t(a, "ola@mamly.app", "hello@mamly.app")})
+                    .putExtra(Intent.EXTRA_SUBJECT, Lang.t(a, "Diagnóstico do Mamly", "Mamly diagnostics"))
+                    .putExtra(Intent.EXTRA_TEXT, text);
+            a.startActivity(Intent.createChooser(send, Lang.t(a, "Enviar diagnóstico", "Send diagnostics")));
+        });
+    }
+
     @JavascriptInterface
     public String takeSharedLink() { return a.takeSharedLink(); }
 

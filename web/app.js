@@ -1370,6 +1370,27 @@
       L('Avisos marcados no Android: <b>', 'Reminders scheduled on Android: <b>') + (d.events || 0) + '</b>' + (d.next ? L(' · próximo às <b>', ' · next at <b>') + esc(d.next) + '</b>' : '');
     const lines = (d.log || []).slice().reverse();
     $('diagLog').textContent = lines.length ? lines.join('\n') : L('Ainda sem registos.', 'No entries yet.');
+    // resumo em linguagem simples, com atalho para corrigir o que falta
+    const rows = [
+      [st.notifications, L('Notificações', 'Notifications'), 'fixNotif'],
+      [st.exact, L('Alarmes à hora certa', 'Alarms on time'), 'fixAlarm'],
+      [st.battery, L('Funcionar em segundo plano', 'Run in the background'), 'fixBattery'],
+      [st.tts && !st.noPortuguese, L('Voz para falar', 'Voice to speak'), st.noPortuguese ? 'fixVoice' : ''],
+      [st.mic !== false, L('Microfone', 'Microphone'), ''],
+    ];
+    $('diagSimple').innerHTML = rows.map(([ok, label, fix]) => '<li><span class="' + (ok ? 'ok">✓' : 'no">✗') + '</span>' + esc(label)
+      + (!ok && fix ? '<button type="button" data-fix="' + fix + '">' + L('Corrigir', 'Fix') + ' ›</button>' : '') + '</li>').join('');
+  }
+  function diagText() {
+    let d = {};
+    try { d = JSON.parse(NATIVE.diag()); } catch (e) {}
+    const st = d.status || {}, yn = (v) => v ? 'sim' : 'NÃO';
+    return ['Diagnóstico do Mamly ' + (NATIVE.version ? NATIVE.version() : ''), d.device || '',
+      'Notificações: ' + yn(st.notifications) + ' · Alarmes exatos: ' + yn(st.exact) + ' · Segundo plano: ' + yn(st.battery) + ' · Voz: ' + yn(st.tts) + (st.noPortuguese ? ' (sem voz PT)' : '') + ' · Microfone: ' + yn(st.mic) + ' · Ecrã de bloqueio: ' + yn(st.fullScreen !== false),
+      'Avisos marcados: ' + (d.events || 0) + (d.next ? ' · próximo às ' + d.next : '') + ' · Lembretes: ' + reminders.filter(r => !r.done).length + ' · Calendário: ' + (settings.calOn ? 'ligado' : 'desligado'),
+      // os registos não levam o texto dos lembretes (privacidade)
+      '', 'Registos:', ...(d.log || []).slice(-60).map(l => String(l).replace(/«[^»]*»/g, '«…»').replace(/“[^”]*”/g, '“…”')
+        .replace(/((?:A dizer|Ouvi|Heard|Saying|Resposta|Reply|Hora|Time|Calendário: erro)[^:]*: ).*/, '$1…'))].join('\n');
   }
   function readSettings() {
     settings.name = $('sName').value.trim();
@@ -1808,6 +1829,17 @@
     $('sLockAlertWrap').hidden = false;
     $('sTestStandby').hidden = false;
     $('diagWrap').hidden = false;
+    $('diagSimple').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-fix]'); if (!b) return;
+      const f = b.dataset.fix;
+      if (f === 'fixBattery') { $('settingsDlg').close(); setTimeout(() => $('fixBattery').click(), 200); }
+      else if (f === 'fixNotif') NATIVE.openNotificationSettings();
+      else if (f === 'fixAlarm') NATIVE.openAlarmSettings();
+      else if (f === 'fixVoice') NATIVE.openVoiceInstall();
+    });
+    $('sDiagSend').addEventListener('click', () => {
+      if (NATIVE.shareDiag) NATIVE.shareDiag(diagText()); else NATIVE.share(diagText());
+    });
     $('sTestNow').addEventListener('click', () => {
       NATIVE.testNow();
       toast(L('Daqui a 10 segundos deve falar. Podes desligar o ecrã.', 'It should speak in 10 seconds. You can turn the screen off.'));
@@ -1961,7 +1993,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
-    '📅 Do calendário': '📅 From your calendar', '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', '📲 Ainda mais rápido': '📲 Even faster', 'Põe o botão do Mamly no ecrã principal: mantém o dedo num espaço vazio → «Widgets» → Mamly. Tocas e ele abre logo a ouvir. Também podes manter o dedo no ícone do Mamly → «Novo lembrete».': 'Put the Mamly button on your home screen: long-press an empty spot → “Widgets” → Mamly. Tap it and it opens already listening. You can also long-press the Mamly icon → “New reminder”.', 'Restaurar': 'Restore',
+    '📅 Do calendário': '📅 From your calendar', '🛠️ Os avisos não tocam?': '🛠️ Reminders not ringing?', 'Primeiro experimenta o teste: carrega no botão, desliga o ecrã e espera. Se ouvires a voz, está tudo a funcionar.': 'Try the test first: tap the button, turn the screen off and wait. If you hear the voice, everything works.', 'Se continuar a falhar, envia-nos o diagnóstico (não inclui os teus lembretes) e nós ajudamos.': "If it still fails, send us the diagnostics (it doesn't include your reminders) and we'll help.", 'Enviar diagnóstico': 'Send diagnostics', 'Detalhes técnicos': 'Technical details', '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', '📲 Ainda mais rápido': '📲 Even faster', 'Põe o botão do Mamly no ecrã principal: mantém o dedo num espaço vazio → «Widgets» → Mamly. Tocas e ele abre logo a ouvir. Também podes manter o dedo no ícone do Mamly → «Novo lembrete».': 'Put the Mamly button on your home screen: long-press an empty spot → “Widgets” → Mamly. Tap it and it opens already listening. You can also long-press the Mamly icon → “New reminder”.', 'Restaurar': 'Restore',
     'Dia': 'Day', 'Dias': 'Days', 'Em dias da semana': 'On days of the week', 'Das': 'From', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",
