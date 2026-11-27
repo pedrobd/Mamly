@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- fundo redondo do widget: o mesmo coral → laranja do botão do microfone da app -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <gradient android:angle="315" android:startColor="#FD726B" android:endColor="#FBB15E" />
-</shape>
+<!-- O botão do microfone da app: aro escuro, contorno e o círculo amarelo → coral -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval"><solid android:color="#46222D" /></shape>
+    </item>
+    <item android:top="5dp" android:bottom="5dp" android:left="5dp" android:right="5dp">
+        <shape android:shape="oval"><solid android:color="#1A0D17" /></shape>
+    </item>
+    <item android:top="9dp" android:bottom="9dp" android:left="9dp" android:right="9dp">
+        <shape android:shape="oval">
+            <gradient android:type="linear" android:angle="300" android:startColor="#FBD270" android:centerColor="#FC9C6E" android:endColor="#FD726B" />
+        </shape>
+    </item>
+</layer-list>
