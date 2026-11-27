@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Botão grande: aro suave e círculo amarelo → coral, como o microfone da app -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval"><solid android:color="#40FFE6E2" /></shape>
+    </item>
+    <item android:top="7dp" android:bottom="7dp" android:left="7dp" android:right="7dp">
+        <shape android:shape="oval">
+            <gradient android:type="linear" android:angle="300" android:startColor="#FBD270" android:centerColor="#FC9C6E" android:endColor="#FD726B" />
+        </shape>
+    </item>
+</layer-list>

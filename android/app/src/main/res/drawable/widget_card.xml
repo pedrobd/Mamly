@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cartão do widget grande: ameixa em degradê com um brilho pêssego no canto (como o cartão «A seguir» da app) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient android:type="linear" android:angle="315" android:startColor="#6B2259" android:centerColor="#4A1440" android:endColor="#2A0822" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="28dp" />
+            <gradient android:type="radial" android:centerX="0.95" android:centerY="0.95" android:gradientRadius="150dp"
+                android:startColor="#80FD9A6E" android:centerColor="#26FD726B" android:endColor="#00FD726B" />
+        </shape>
+    </item>
+</layer-list>

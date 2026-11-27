@@ -4,4 +4,7 @@
     <string name="widget_desc">Tap and talk: Mamly opens already listening</string>
     <string name="shortcut_short">New reminder</string>
     <string name="shortcut_long">New voice reminder</string>
+    <string name="widget_tap">Tap and talk</string>
+    <string name="widget_small">Mamly · button</string>
+    <string name="widget_big">Mamly · card</string>
 </resources>
