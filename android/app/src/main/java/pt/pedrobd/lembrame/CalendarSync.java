@@ -116,7 +116,7 @@ final class CalendarSync {
                     long at = begin - HOUR;
                     if (at > now + NEAR_MS) ats.put(new JSONObject().put("at", at).put("say", say(s, en, 0, title, begin)));
                 }
-                if (ats.length() == 0) continue;
+                // mesmo sem avisos por dar (ex.: o «3 dias antes» já passou), o evento aparece na lista da app
                 out.put(new JSONObject().put("rid", rid).put("title", title).put("begin", begin).put("ats", ats));
             }
         } catch (Exception e) {

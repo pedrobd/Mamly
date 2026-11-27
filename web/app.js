@@ -141,6 +141,7 @@
   function status(r) {
     if (r.done) return 'done';
     if (nextEvent(r)) return 'active';
+    if (r.cal) return 'active';
     return r.hasDeadline || r.once ? 'waiting' : 'finished';
   }
   const DAYS_PT = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -1064,6 +1065,12 @@
       if (!r) return;
       const ev = nextEvent(r);
       const b = el.querySelector('b'), sm = el.querySelector('small');
+      if (r.cal && !ev) { // evento do calendário sem mais avisos: mostra a hora do evento
+        const cb = hm(r.cal.begin), cs = (dayWord(r.cal.begin) || L('hoje ', 'today ')).trim() + L(' · sem aviso', ' · no reminder');
+        if (b.textContent !== cb) b.textContent = cb;
+        if (sm.textContent !== cs) sm.textContent = cs;
+        return;
+      }
       const big = ev ? bigTime(ev.at, now) : (r.hasDeadline || r.once ? '!' : '—');
       const small = ev ? (dayWord(ev.at) ? dayWord(ev.at).trim() : L('em ', 'in ') + shortDur(ev.at - now)) : (r.hasDeadline || r.once ? L('Já passou. Fizeste?', 'Time passed. Done?') : L('sem avisos', 'no reminders'));
       if (b.textContent !== big) b.textContent = big;
@@ -1451,7 +1458,7 @@
     const now = Date.now(), seen = new Set();
     let changed = false;
     items.forEach(it => {
-      if (!it.ats || !it.ats.length) return;
+      if (!it.ats) it.ats = [];
       seen.add(it.rid);
       let r = reminders.find(x => x.id === it.rid);
       if (!r) {
@@ -1460,7 +1467,7 @@
       }
       const ats = it.ats.map(a => ({ at: a.at, say: a.say }));
       if (r.text !== it.title || JSON.stringify(r.calAts) !== JSON.stringify(ats)) {
-        r.text = it.title; r.calAts = ats; r.cal = { begin: it.begin }; r.firstAt = ats[0].at; changed = true;
+        r.text = it.title; r.calAts = ats; r.cal = { begin: it.begin }; r.firstAt = ats.length ? ats[0].at : it.begin; changed = true;
       }
     });
     // apagado ou mudado no calendário, calendário desligado, ou o evento já passou
@@ -1468,8 +1475,7 @@
     reminders = reminders.filter(r => {
       if (!r.cal || seen.has(r.id)) return true;
       if (r.done) return r.cal.begin > now - 7 * 864e5;
-      if (r.cal.begin <= now) return false;
-      return settings.calOn && !pending(r).length; // já tocou tudo: fica até à hora do evento
+      return false; // apagado ou mudado no calendário, ou calendário desligado
     });
     if (changed || reminders.length !== before) { save(); render(); }
   }
@@ -1495,6 +1501,12 @@
       html += '<label class="cal-item"><input type="checkbox" data-cal="' + c.id + '"' + (ids.includes(c.id) ? ' checked' : '') + '>'
         + '<i style="background:' + esc(c.color) + '"></i><span>' + esc(nm) + '</span></label>';
     });
+    let n = 0;
+    if (st.calendar) { try { n = JSON.parse(NATIVE.calendarItems() || '[]').length; } catch (e) {} }
+    $('sCalCount').textContent = !st.calendar ? '' : !ids.length ? L('Escolhe pelo menos um calendário.', 'Pick at least one calendar.')
+      : !(settings.calLeads || []).length ? L('Escolhe quando queres ser avisado.', 'Choose when to be reminded.')
+      : n ? L('✓ A ler o calendário: ' + n + (n === 1 ? ' evento' : ' eventos') + ' com hora nos próximos 5 dias.', '✓ Reading your calendar: ' + n + (n === 1 ? ' event' : ' events') + ' with a time in the next 5 days.')
+      : L('✓ A ler o calendário: sem eventos com hora nos próximos 5 dias.', '✓ Reading your calendar: no events with a time in the next 5 days.');
     $('sCalList').innerHTML = html || (st.calendar ? '<p class="quiet-hint">' + L('Não encontrei calendários neste telemóvel.', 'No calendars found on this phone.') + '</p>' : '');
     document.querySelectorAll('#sCalLeads input').forEach(i => { i.checked = (settings.calLeads || []).includes(i.dataset.lead); });
     $('sCalHour').value = settings.calHour || '09:00';
@@ -1519,6 +1531,7 @@
     $('sCalBody').addEventListener('change', (e) => {
       if (e.target.id === 'sCal') return;
       readCalSettings();
+      setTimeout(renderCalSettings, 500);
       $('sCalHourWrap').hidden = !(settings.calLeads || []).some(l => /d$/.test(l));
     });
   }

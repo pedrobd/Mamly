@@ -141,6 +141,18 @@
              || cut(/\s(?:todos os meses|cada mês|cada mes|mensalmente)(?: no| ao| a)? dia (\d{1,2})(?=[\s,.!?])/))) {
       recur = { kind: 'monthly', dom: Math.max(1, Math.min(31, parseInt(rm[1], 10))) };
     }
+    // «todos os dias … menos ao sábado e ao domingo»: tira esses dias da repetição
+    if (recur && (recur.kind === 'daily' || recur.kind === 'weekly')) {
+      const ART = '(?:(?:ao|aos|à|às|o|os|a|as|no|nos|na|nas|durante o)\\s+)?', ITEM = '(?:' + DOWRE_PT + '|(?:fim|fins) de semana)';
+      const ex = s.match(new RegExp('\\s(?:exceto|excepto|menos|tirando|fora)\\s+' + ART + ITEM + '(?:\\s*(?:,|e)\\s*' + ART + ITEM + ')*(?=[\\s,.!?])'));
+      if (ex) {
+        const drop = (ex[0].match(new RegExp(DOWRE_PT, 'g')) || []).map(dowOf).filter(d => d != null);
+        if (/(?:fim|fins) de semana/.test(ex[0])) drop.push(0, 6);
+        const base = recur.kind === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : recur.days;
+        const days = base.filter(d => drop.indexOf(d) < 0);
+        if (drop.length && days.length) { s = s.replace(ex[0], ' '); recur = { kind: 'weekly', days }; }
+      }
+    }
     // um dia da semana, uma só vez: «na sexta às 10h», «na próxima segunda»
     if (!recur && !dayOffset) {
       const wd = cut(new RegExp('\\s(?:na|no|nesta|neste|esta|este|na próxima|no próximo|próxima|próximo)\\s+(' + DOWRE_PT + ')(?=[\\s,.!?])(?!\\s+(?:vez|vezes|parte|via|mão|metade|opção|hipótese|oportunidade))'));

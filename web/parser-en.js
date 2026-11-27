@@ -139,6 +139,18 @@
              || cut(/\s(?:every month|each month|monthly) on the (\d{1,2})(?:st|nd|rd|th)?(?=[\s,.!?])/))) {
       recur = { kind: 'monthly', dom: Math.max(1, Math.min(31, parseInt(rm[1], 10))) };
     }
+    // "every day … except Saturday and Sunday": take those days out
+    if (recur && (recur.kind === 'daily' || recur.kind === 'weekly')) {
+      const ART = '(?:(?:on|the|on the)\\s+)?', ITEM = '(?:' + DOWRE_EN + '|weekends?)';
+      const ex = s.match(new RegExp('\\s(?:except|but not|apart from|other than)\\s+' + ART + ITEM + '(?:\\s*(?:,|and|or)\\s*' + ART + ITEM + ')*(?=[\\s,.!?])'));
+      if (ex) {
+        const drop = (ex[0].match(new RegExp(DOWRE_EN, 'g')) || []).map(dowOfEn).filter(d => d != null);
+        if (/weekend/.test(ex[0])) drop.push(0, 6);
+        const base = recur.kind === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : recur.days;
+        const days = base.filter(d => drop.indexOf(d) < 0);
+        if (drop.length && days.length) { s = s.replace(ex[0], ' '); recur = { kind: 'weekly', days }; }
+      }
+    }
     // a weekday, once: "on friday at 10", "next monday", "this friday"
     if (!recur && !dayOffset) {
       const wd = cut(new RegExp('\\s(?:on|this|next|on next)\\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)(?=[\\s,.!?])'));

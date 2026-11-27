@@ -515,3 +515,5 @@ button { cursor: pointer; }
 
 .item-body .tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-body .tag svg { flex: none; }
+.cal-count { margin: 12px 0 0; font-size: 14px; font-weight: 700; color: var(--accent); }
+.cal-count:empty { display: none; }
