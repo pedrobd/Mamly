@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Mamly: new voice reminder</string>
+    <string name="widget_desc">Tap and talk: Mamly opens already listening</string>
+    <string name="shortcut_short">New reminder</string>
+    <string name="shortcut_long">New voice reminder</string>
+</resources>

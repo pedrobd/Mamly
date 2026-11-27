@@ -42,6 +42,8 @@ public class MainActivity extends Activity {
     Dictation dictation;
     static final int REQ_MIC = 2;
     static final int REQ_CAL = 3;
+    static final String ACTION_LISTEN = "pt.pedrobd.lembrame.LISTEN";
+    static volatile boolean pendingListen = false; // aberto pelo widget/atalho: a página começa a ouvir
     static final int REQ_BACKUP_SAVE = 11, REQ_BACKUP_OPEN = 12;
     private String pendingBackup = null;
 
@@ -159,6 +161,7 @@ public class MainActivity extends Activity {
         web.loadUrl(START);
         captureSharedLink(getIntent());
         handleAlertIntent(getIntent());
+        handleListenIntent(getIntent());
 
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
@@ -178,6 +181,14 @@ public class MainActivity extends Activity {
         setIntent(intent);
         if (captureSharedLink(intent) && pageReady) js("window.__native && __native.onSharedLink && __native.onSharedLink()");
         handleAlertIntent(intent);
+        handleListenIntent(intent);
+    }
+
+    private void handleListenIntent(Intent i) {
+        if (i == null || !ACTION_LISTEN.equals(i.getAction())) return;
+        i.setAction(Intent.ACTION_MAIN);
+        pendingListen = true;
+        if (pageReady) js("window.__native && __native.onResume()");
     }
 
     /** Aberto pelo aviso (ecrã bloqueado): mostra a app por cima do bloqueio, com o ecrã aceso, durante o aviso. */

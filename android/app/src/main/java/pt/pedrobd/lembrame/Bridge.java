@@ -131,6 +131,10 @@ public class Bridge {
     @JavascriptInterface
     public String calendarItems() { return CalendarSync.items(a).toString(); }
 
+    /** Aberto pelo widget ou pelo atalho do ícone: true uma vez, e a página começa logo a ouvir. */
+    @JavascriptInterface
+    public boolean takeListen() { boolean v = MainActivity.pendingListen; MainActivity.pendingListen = false; return v; }
+
     // ---------- cópia de segurança (ficheiro escolhido pela pessoa) ----------
     @JavascriptInterface
     public void saveBackup(String json, String fileName) { a.saveBackup(json, fileName); }

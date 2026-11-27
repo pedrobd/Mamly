@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Mamly: novo lembrete por voz</string>
+    <string name="widget_desc">Toca e fala: o Mamly abre logo a ouvir</string>
+    <string name="shortcut_short">Novo lembrete</string>
+    <string name="shortcut_long">Novo lembrete por voz</string>
+</resources>

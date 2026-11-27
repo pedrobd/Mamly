@@ -918,6 +918,14 @@
     await speak(L('Tens ', 'You have ') + open.length + (open.length === 1 ? L(' evento', ' thing') : L(' eventos', ' things')) + L(' por fazer. ', ' to do. ') + parts.join('. ') + '.');
   }
 
+  // aberto pelo widget do ecrã principal (ou pelo atalho do ícone): começa logo a ouvir
+  function checkListenRequest() {
+    if (!NATIVE || !NATIVE.takeListen || !NATIVE.takeListen()) return;
+    if (micBusy || !$('alert').hidden || $('welcomeDlg').open) return;
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    setTimeout(() => { if (!micBusy) onMic(); }, 350);
+  }
+
   // ---------- microfone ----------
   let micBusy = false;
   async function onMic() {
@@ -1302,6 +1310,7 @@
     $('sListen').disabled = !CAN_LISTEN;
     fillVoiceSelect();
     renderCalSettings();
+    $('widgetTip').hidden = !(NATIVE && NATIVE.takeListen);
     $('appVersion').textContent = NATIVE && NATIVE.version ? L('versão ', 'version ') + NATIVE.version() : L('versão web', 'web version');
     $('settingsDlg').showModal();
     if (NATIVE) {
@@ -1707,7 +1716,7 @@
       },
       onSpoken() { checkNativeAlert(); },
       onActions() { applyNativeActions(); },
-      onResume() { applyNativeActions(); syncCalendar(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); updateWelcomePerms(); if ($('settingsDlg').open) renderCalSettings(); },
+      onResume() { applyNativeActions(); syncCalendar(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); updateWelcomePerms(); if ($('settingsDlg').open) renderCalSettings(); checkListenRequest(); },
       onSharedLink() { checkIncomingLink(); },
       onVoiceReady() { updateNativeNotice(); if (settings.nativeVoice) NATIVE.setVoice(settings.nativeVoice); },
       // botão "voltar" do Android: fecha o que estiver aberto; devolve false se não havia nada para fechar
@@ -1881,7 +1890,7 @@
     'De 30 em 30 segundos': 'Every 30 seconds', 'De minuto a minuto': 'Every minute', 'De 5 em 5 min': 'Every 5 min', 'De 10 em 10 min': 'Every 10 min',
     'De 15 em 15 min': 'Every 15 min', 'De meia em meia hora': 'Every half hour', 'De 45 em 45 min': 'Every 45 min', 'De hora a hora': 'Every hour',
     'De hora e meia em hora e meia': 'Every hour and a half', 'De 2 em 2 horas': 'Every 2 hours', 'De 3 em 3 horas': 'Every 3 hours',
-    '📅 Do calendário': '📅 From your calendar', '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', 'Restaurar': 'Restore',
+    '📅 Do calendário': '📅 From your calendar', '💾 Cópia de segurança': '💾 Backup', 'Vais mudar de telemóvel? Guarda uma cópia dos teus lembretes e definições (por exemplo no Google Drive ou enviada para ti por email) e, no telemóvel novo, carrega em «Restaurar».': 'Changing phones? Save a copy of your reminders and settings (for example to Google Drive or emailed to yourself) and, on the new phone, tap “Restore”.', 'Guardar cópia': 'Save backup', '📲 Ainda mais rápido': '📲 Even faster', 'Põe o botão do Mamly no ecrã principal: mantém o dedo num espaço vazio → «Widgets» → Mamly. Tocas e ele abre logo a ouvir. Também podes manter o dedo no ícone do Mamly → «Novo lembrete».': 'Put the Mamly button on your home screen: long-press an empty spot → “Widgets” → Mamly. Tap it and it opens already listening. You can also long-press the Mamly icon → “New reminder”.', 'Restaurar': 'Restore',
     'Dia': 'Day', 'Dias': 'Days', 'Em dias da semana': 'On days of the week', 'Das': 'From', 'Primeiro aviso': 'First reminder', 'Até às': 'Until', 'É um prazo (avisa 15 min antes e à hora limite)': "It's a deadline (reminds you 15 min before and at the time)",
     'Apagar': 'Delete', 'Partilhar': 'Share', 'Cancelar': 'Cancel', 'Guardar': 'Save',
     'Recebeste um lembrete': 'You got a reminder', 'Se aceitares, o Mamly lembra-te disto como se o tivesses criado tu.': "If you accept, Mamly will remind you as if you'd created it yourself.",
@@ -1948,6 +1957,7 @@
     syncCalendar();
     updateNativeNotice();
     checkNativeAlert();
+    checkListenRequest();
   }
 
   const qs = new URLSearchParams(location.search);
