@@ -187,6 +187,7 @@ public class Bridge {
             o.put("fullScreen", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
             o.put("mic", a.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED);
             o.put("calendar", CalendarSync.granted(a));
+            o.put("maker", (Build.MANUFACTURER == null ? "" : Build.MANUFACTURER).toLowerCase(java.util.Locale.ROOT));
         } catch (JSONException ignored) {}
         return o.toString();
     }

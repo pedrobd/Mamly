@@ -523,3 +523,5 @@ button { cursor: pointer; }
 .toast.wide span { flex: 1 1 100%; }
 .cal-wrap { margin-top: 18px; }
 .cal-wrap .list { margin-top: 10px; }
+.battery-help { margin: 12px 0 0; padding: 0 0 0 20px; font-size: 14px; line-height: 1.45; color: var(--ink-2); display: grid; gap: 6px; }
+.battery-help b { color: var(--ink); }

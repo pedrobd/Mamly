@@ -1641,6 +1641,35 @@
     });
     save(); render();
   }
+  // Passos para «funcionar em segundo plano», conforme a marca do telemóvel (cada marca põe isto num sítio diferente)
+  function batterySteps(maker) {
+    const m = String(maker || '').toLowerCase();
+    const pause = L('Se vires <b>«Pausar atividade da aplicação quando sem utilização»</b>, desliga.', 'If you see <b>“Pause app activity if unused”</b>, turn it off.');
+    if (/xiaomi|redmi|poco/.test(m)) return [
+      L('Toca em <b>«Bateria»</b> e escolhe <b>«Sem restrições»</b>.', 'Tap <b>“Battery”</b> and choose <b>“No restrictions”</b>.'),
+      pause,
+      L('Em <b>«Outras permissões»</b>: liga <b>«Início automático»</b> e põe <b>«Mostrar no ecrã de bloqueio»</b> e <b>«Mostrar janelas pop-up em segundo plano»</b> em Permitir.', 'In <b>“Other permissions”</b>: turn on <b>“Autostart”</b> and allow <b>“Show on lock screen”</b> and <b>“Display pop-up windows while running in the background”</b>.'),
+    ];
+    if (/samsung/.test(m)) return [
+      L('Toca em <b>«Bateria»</b> e escolhe <b>«Sem restrições»</b>.', 'Tap <b>“Battery”</b> and choose <b>“Unrestricted”</b>.'),
+      pause,
+    ];
+    if (/huawei|honor/.test(m)) return [
+      L('Toca em <b>«Bateria»</b> → <b>«Arranque de aplicações»</b>.', 'Tap <b>“Battery”</b> → <b>“App launch”</b>.'),
+      L('Desliga <b>«Gerir automaticamente»</b> e deixa as 3 opções ligadas.', 'Turn off <b>“Manage automatically”</b> and leave all 3 options on.'),
+    ];
+    if (/oneplus|oppo|realme|vivo/.test(m)) return [
+      L('Toca em <b>«Utilização da bateria»</b> (ou «Bateria»).', 'Tap <b>“Battery usage”</b> (or “Battery”).'),
+      L('Liga <b>«Permitir atividade em segundo plano»</b> (ou escolhe «Sem restrições»).', 'Turn on <b>“Allow background activity”</b> (or choose “Unrestricted”).'),
+      pause,
+    ];
+    return [
+      L('Toca em <b>«Utilização da bateria»</b> (ou «Bateria»).', 'Tap <b>“App battery usage”</b> (or “Battery”).'),
+      L('Se aparecer <b>«Permitir utilização em segundo plano»</b>, toca <b>nessas palavras</b> (não no botão) e escolhe <b>«Sem restrições»</b>.', 'If you see <b>“Allow background usage”</b>, tap <b>the words</b> (not the switch) and choose <b>“Unrestricted”</b>.'),
+      pause,
+    ];
+  }
+  const batteryStatus = () => { try { return JSON.parse(NATIVE.status()); } catch (e) { return {}; } };
   function updateNativeNotice() {
     let st = {};
     try { st = JSON.parse(NATIVE.status()); } catch (e) {}
@@ -1659,6 +1688,8 @@
     $('fixVoice').hidden = !st.noPortuguese;
     $('fixVoiceSettings').hidden = !st.noPortuguese;
     $('fixBattery').hidden = !!st.battery;
+    $('batteryHelp').hidden = !!st.battery || !!st.noPortuguese;
+    if (!st.battery) $('batteryHelp').innerHTML = batterySteps(st.maker).map(t => '<li>' + t + '</li>').join('');
     $('fixNotif').hidden = !!st.notifications;
     $('fixAlarm').hidden = !!st.exact;
     $('fixFullScreen').hidden = st.fullScreen !== false || !settings.lockAlert || !settings.listenAfter;
@@ -1743,7 +1774,7 @@
       showDiag();
     });
     $('fixBattery').addEventListener('click', () => {
-      toast(L('Toca em «Utilização da bateria» → «Sem restrições». Se vires «Permitir utilização em segundo plano», toca nas palavras (não no botão).', 'Tap “App battery usage” → “Unrestricted”. If you see “Allow background usage”, tap the words (not the switch).'), null, 9000);
+      toast(batterySteps(batteryStatus().maker)[0].replace(/<[^>]+>/g, ''), null, 9000);
       setTimeout(() => NATIVE.openBatterySettings(), 2500);
     });
     $('fixNotif').addEventListener('click', () => NATIVE.openNotificationSettings());
@@ -1987,6 +2018,7 @@
     let st = {};
     try { st = JSON.parse(NATIVE.status()); } catch (e) {}
     const ok = { notif: st.notifications, alarm: st.exact, battery: st.battery, mic: st.mic };
+    $('wBatteryTxt').innerHTML = L('Para o Android não desligar o Mamly. ', 'So Android doesn’t shut Mamly down. ') + batterySteps(st.maker).join(' ');
     document.querySelectorAll('#welcomeDlg .w-perm').forEach(b => {
       const v = ok[b.dataset.perm];
       b.classList.toggle('ok', !!v);
@@ -2012,7 +2044,7 @@
       const p = b.dataset.perm;
       if (p === 'notif') NATIVE.openNotificationSettings();
       else if (p === 'alarm') NATIVE.openAlarmSettings();
-      else if (p === 'battery') { toast(L('Toca em «Utilização da bateria» → «Sem restrições». Se vires «Permitir utilização em segundo plano», toca nas palavras (não no botão).', 'Tap “App battery usage” → “Unrestricted”. If you see “Allow background usage”, tap the words (not the switch).'), null, 9000); setTimeout(() => NATIVE.openBatterySettings(), 2500); }
+      else if (p === 'battery') { toast(batterySteps(batteryStatus().maker)[0].replace(/<[^>]+>/g, ''), null, 9000); setTimeout(() => NATIVE.openBatterySettings(), 2500); }
       else if (p === 'mic' && NATIVE.requestMic) NATIVE.requestMic();
     }
   });
