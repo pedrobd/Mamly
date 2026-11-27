@@ -55,7 +55,11 @@ public class Bridge {
         try {
             JSONObject o = new JSONObject(json);
             JSONArray ev = o.optJSONArray("events");
-            Store.setEvents(a, ev != null ? ev : new JSONArray());
+            if (ev == null) ev = new JSONArray();
+            // os avisos do calendário são do Android: ficam (o Scheduler volta a lê-los)
+            JSONArray old = Store.events(a);
+            for (int i = 0; i < old.length(); i++) { JSONObject e = old.optJSONObject(i); if (e != null && e.optBoolean("cal", false)) ev.put(e); }
+            Store.setEvents(a, ev);
             JSONObject s = o.optJSONObject("settings");
             if (s != null) { Store.setSettings(a, s); a.runOnUiThread(a::ensureSpeechLang); }
         } catch (JSONException e) {
@@ -112,6 +116,21 @@ public class Bridge {
     @JavascriptInterface
     public void alertClosed() { a.alertClosed(); }
 
+    // ---------- calendário (só leitura, fica tudo no telemóvel) ----------
+    @JavascriptInterface
+    public void requestCalendar() {
+        a.runOnUiThread(() -> {
+            if (!CalendarSync.granted(a)) a.requestPermissions(new String[]{android.Manifest.permission.READ_CALENDAR}, MainActivity.REQ_CAL);
+        });
+    }
+
+    @JavascriptInterface
+    public String calendars() { return CalendarSync.calendars(a).toString(); }
+
+    /** Os avisos que vêm do calendário: [{rid, title, begin, ats:[{at, say}]}] */
+    @JavascriptInterface
+    public String calendarItems() { return CalendarSync.items(a).toString(); }
+
     /** Primeira abertura: pede a autorização do microfone sem começar a ouvir. */
     @JavascriptInterface
     public void requestMic() {
@@ -156,6 +175,7 @@ public class Bridge {
             android.app.NotificationManager nm = a.getSystemService(android.app.NotificationManager.class);
             o.put("fullScreen", Build.VERSION.SDK_INT < 34 || nm.canUseFullScreenIntent());
             o.put("mic", a.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED);
+            o.put("calendar", CalendarSync.granted(a));
         } catch (JSONException ignored) {}
         return o.toString();
     }

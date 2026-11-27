@@ -41,6 +41,7 @@ public class MainActivity extends Activity {
     Speech speech;
     Dictation dictation;
     static final int REQ_MIC = 2;
+    static final int REQ_CAL = 3;
     private String pendingListenMode = null;
     private String pendingSharedLink = null;
     private boolean pageReady = false;

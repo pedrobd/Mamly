@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat;
 public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (intent.getBooleanExtra("calRefresh", false)) { Scheduler.scheduleNext(context); return; } // só volta a ler o calendário
         boolean test = intent.getBooleanExtra("test", false);
         Store.log(context, test ? "Alarme de teste tocou" : "Alarme tocou");
         try {

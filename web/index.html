@@ -318,6 +318,23 @@
         <p class="quiet-hint">Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.</p>
         <p class="quiet-hint">Para uma pausa, diz ao microfone: «não me incomodes das 15h às 16h» ou «durante 1 hora».</p>
       </div>
+      <div class="quiet cal" id="sCalWrap" hidden>
+        <label class="toggle"><input id="sCal" type="checkbox"> <span><b>📅 Calendário</b> <span>· Avisar dos eventos do teu calendário</span></span></label>
+        <div id="sCalBody" hidden>
+          <p class="quiet-hint" id="sCalPerm" hidden><span>Para ler os teus calendários, o Mamly precisa de autorização.</span> <button type="button" class="btn btn-soft" id="sCalGrant">Dar acesso</button></p>
+          <p class="cal-label">Calendários a seguir</p>
+          <div id="sCalList" class="cal-list"></div>
+          <p class="cal-label">Avisar</p>
+          <div id="sCalLeads" class="cal-leads">
+            <label><input type="checkbox" data-lead="3d"> <span>3 dias antes</span></label>
+            <label><input type="checkbox" data-lead="2d"> <span>2 dias antes</span></label>
+            <label><input type="checkbox" data-lead="1d"> <span>1 dia antes</span></label>
+            <label><input type="checkbox" data-lead="1h"> <span>1 hora antes</span></label>
+          </div>
+          <label id="sCalHourWrap" class="cal-hour"><span>Avisos de dias antes, às</span> <input id="sCalHour" type="time" value="09:00"></label>
+          <p class="quiet-hint">Só eventos com hora. O Mamly só lê o calendário: não muda nada e nada sai do telemóvel.</p>
+        </div>
+      </div>
       <label class="toggle" id="sAlarmWrap" hidden><input id="sAlarm" type="checkbox"> <span>Usar o volume do alarme (ouve-se mesmo com o telemóvel em silêncio)</span></label>
       <label class="toggle"><input id="sListen" type="checkbox"> <span>Depois do aviso, ouvir a resposta (<q>feito</q>, <q>adia 15 minutos</q>)</span></label>
       <label class="toggle" id="sLockAlertWrap" hidden><input id="sLockAlert" type="checkbox"> <span>Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz</span></label>

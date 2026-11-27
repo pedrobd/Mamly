@@ -489,3 +489,16 @@ button { cursor: pointer; }
 }
 .dnd-bar #dndText { flex: 1; }
 .dnd-bar .link-btn { margin: 0; }
+
+/* calendário */
+.cal-label { margin: 14px 0 6px; font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-2); }
+.cal-acc { margin: 10px 0 4px; font-size: 13px; color: var(--ink-2); word-break: break-all; }
+.cal-list { display: grid; gap: 2px; }
+.dlg label.cal-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; font-size: 16px; font-weight: 600; color: var(--ink); }
+.dlg label.cal-item input, .dlg .cal-leads input { margin: 0; accent-color: var(--accent); width: 20px; height: 20px; flex: none; }
+.cal-item i { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.cal-leads { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.dlg .cal-leads label { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 600; color: var(--ink); }
+.dlg label.cal-hour { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+.cal-hour input { width: auto; }
+#sCalPerm { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }

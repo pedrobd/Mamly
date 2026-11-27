@@ -13,7 +13,7 @@
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(reminders)); } catch (e) {} syncNative(); };
   const saveSettings = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch (e) {} syncNative(); };
   let reminders = load(KEY, []);
-  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto' }, load(SKEY, {}));
+  const settings = Object.assign({ name: '', voiceURI: '', rate: 1, repeat: 1, chime: true, listenAfter: true, lockAlert: true, quietOn: true, quietFrom: '23:00', quietTo: '08:00', alarmVolume: true, nativeVoice: '', momMode: false, lang: 'auto', calOn: false, calIds: null, calLeads: ['1d', '1h'], calHour: '09:00', calDone: [] }, load(SKEY, {}));
 
   // ---------- língua ----------
   // 'auto' segue a língua do telemóvel: português se for pt-*, inglês em todas as outras.
@@ -83,7 +83,10 @@
   // ---------- agenda de cada lembrete ----------
   function plan(r) {
     const ev = [];
-    if (r.recur) {
+    if (r.calAts) {
+      // vem do calendário: os avisos de X dias / 1 hora antes do evento
+      r.calAts.forEach(a => ev.push({ at: a.at, kind: 'once' }));
+    } else if (r.recur) {
       // repete por dias: as próximas ~60 vezes, a partir do último aviso
       const from = Math.max(r.lastAt || 0, (r.createdAt || Date.now()) - 1, Date.now() - 864e5);
       LembreteParser.nextRecur(r.recur, from, 60).forEach(at => ev.push({ at, kind: 'once' }));
@@ -148,6 +151,7 @@
     return (rc.days.every(x => x === 0 || x === 6) ? 'aos ' : 'às ') + and(plural);
   }
   function describe(r) {
+    if (r.cal) return '📅 ' + cap(dayWord(r.cal.begin) || L('hoje ', 'today ')) + L('às ', 'at ') + hm(r.cal.begin);
     if (r.recur) return cap(recurLabel(r.recur)) + ' · ' + recurTime(r.recur);
     const day = dayWord(r.once ? r.firstAt : (r.end || r.firstAt));
     if (r.once) return (day ? cap(day) : L('Hoje ', 'Today ')) + L('às ', 'at ') + hm(r.firstAt) + L(' · uma vez', ' · once');
@@ -370,6 +374,11 @@
   // "Ir à InPost" → "ir à InPost", mas "IKEA" fica "IKEA"
   const softLower = (t) => /^[A-ZÀ-Ý][a-zà-ÿ]/.test(t) ? t.charAt(0).toLowerCase() + t.slice(1) : t;
   function rawMessage(r, kind) {
+    if (r.calAts && r.calAts.length) {
+      const now = Date.now();
+      const a = r.calAts.filter(x => x.at <= now + 60000).pop() || r.calAts[0];
+      return a.say;
+    }
     if (r.say && kind !== 'final' && kind !== 'deadline') return withName(r.say) + (/[.!?]$/.test(r.say) ? '' : '.');
     const now = Date.now();
     const task = r.text.replace(/[.!]+$/, '');
@@ -645,6 +654,7 @@
       r.lastAt = Math.max(r.lastAt || 0, Date.now(), nx && nx.at - Date.now() < 12 * 3600e3 ? nx.at : 0);
       r.snoozeAt = null; r.lastDoneAt = Date.now();
     } else { r.done = true; r.doneAt = Date.now(); }
+    if (r.cal) calMarkDone(r);
     save(); render();
     alertRemove(r);
     closeNotif(r.id);
@@ -667,6 +677,7 @@
   }
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   function removeReminder(r) {
+    if (r.cal) calMarkDone(r); // apagado aqui: não volta a vir do calendário
     reminders = reminders.filter(x => x !== r);
     save(); render();
     closeNotif(r.id);
@@ -945,7 +956,8 @@
   function itemHTML(r) {
     const st = status(r);
     const tags = [];
-    if (r.recur) tags.push(`<span class="tag">${ICON.repeat}${esc(cap(recurLabel(r.recur)))}</span>`);
+    if (r.cal) tags.push(`<span class="tag">📅 ${esc(cap(dayWord(r.cal.begin) || L('hoje ', 'today ')) + L('às ', 'at ') + hm(r.cal.begin))}</span>`);
+    else if (r.recur) tags.push(`<span class="tag">${ICON.repeat}${esc(cap(recurLabel(r.recur)))}</span>`);
     else if (r.once) tags.push(`<span class="tag">${ICON.bell}${L('Uma vez', 'Once')}</span>`);
     else tags.push(`<span class="tag">${ICON.repeat}${esc(shortInterval(r.interval))}</span>`);
     if (r.hasDeadline) tags.push(`<span class="tag deadline">${ICON.clock}${EN ? 'by ' + dayWord(r.end) : dayWord(r.end) + 'até '}${hm(r.end)}</span>`);
@@ -1000,7 +1012,7 @@
     setText('nextIn', dayWord(bestEv.at) ? cap(dayWord(bestEv.at).trim()) : L('daqui a ', 'in ') + shortDur(bestEv.at - now));
     setText('nextTime', bigTime(bestEv.at, now));
     setText('nextTask', best.text);
-    const meta = best.recur ? cap(recurLabel(best.recur)) : best.once ? L('Aviso único', 'One-time reminder') : shortInterval(best.interval) + (best.hasDeadline ? L(' · prazo às ', ' · due at ') + hm(best.end) : '');
+    const meta = best.cal ? '📅 ' + cap(dayWord(best.cal.begin) || L('hoje ', 'today ')) + L('às ', 'at ') + hm(best.cal.begin) : best.recur ? cap(recurLabel(best.recur)) : best.once ? L('Aviso único', 'One-time reminder') : shortInterval(best.interval) + (best.hasDeadline ? L(' · prazo às ', ' · due at ') + hm(best.end) : '');
     setText('nextMeta', meta);
     // anel: quanto falta para o próximo aviso (cheio = acabou de avisar, vazio = vai tocar)
     const span = best.once || best.recur ? Math.max(bestEv.at - Math.max(best.createdAt || now, best.recur ? best.lastAt || 0 : 0), MIN) : (bestEv.kind === 'regular' ? best.interval * MIN : 15 * MIN);
@@ -1148,6 +1160,7 @@
     $('sMom').checked = !!settings.momMode;
     $('sListen').disabled = !CAN_LISTEN;
     fillVoiceSelect();
+    renderCalSettings();
     $('appVersion').textContent = NATIVE && NATIVE.version ? L('versão ', 'version ') + NATIVE.version() : L('versão web', 'web version');
     $('settingsDlg').showModal();
     if (NATIVE) {
@@ -1294,6 +1307,95 @@
   window.addEventListener('error', (e) => nativeLog('Erro na interface: ' + e.message + ' (' + (e.lineno || '?') + ')'));
   window.addEventListener('unhandledrejection', (e) => nativeLog('Erro na interface: ' + ((e.reason && e.reason.message) || e.reason)));
   let syncTimer = null;
+  // ---------- calendário (Android) ----------
+  const hmToMin = (v) => { const [h, m] = String(v || '09:00').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  const calBegin = (rid) => Number(String(rid).split(':')[2]) || 0;
+  function calMarkDone(r) {
+    const now = Date.now();
+    settings.calDone = (settings.calDone || []).filter(id => calBegin(id) > now);
+    if (!settings.calDone.includes(r.id)) settings.calDone.push(r.id);
+    saveSettings();
+  }
+  // Traz os avisos do calendário (lidos pelo Android) para a lista
+  function syncCalendar() {
+    if (!NATIVE || !NATIVE.calendarItems) return;
+    let items = [];
+    if (settings.calOn) { try { items = JSON.parse(NATIVE.calendarItems() || '[]'); } catch (e) {} }
+    const now = Date.now(), seen = new Set();
+    let changed = false;
+    items.forEach(it => {
+      if (!it.ats || !it.ats.length) return;
+      seen.add(it.rid);
+      let r = reminders.find(x => x.id === it.rid);
+      if (!r) {
+        r = { id: it.rid, createdAt: now, lastAt: 0, done: false, once: true, interval: null, end: null, hasDeadline: false };
+        reminders.push(r); changed = true;
+      }
+      const ats = it.ats.map(a => ({ at: a.at, say: a.say }));
+      if (r.text !== it.title || JSON.stringify(r.calAts) !== JSON.stringify(ats)) {
+        r.text = it.title; r.calAts = ats; r.cal = { begin: it.begin }; r.firstAt = ats[0].at; changed = true;
+      }
+    });
+    // apagado ou mudado no calendário, calendário desligado, ou o evento já passou
+    const before = reminders.length;
+    reminders = reminders.filter(r => {
+      if (!r.cal || seen.has(r.id)) return true;
+      if (r.done) return r.cal.begin > now - 7 * 864e5;
+      if (r.cal.begin <= now) return false;
+      return settings.calOn && !pending(r).length; // já tocou tudo: fica até à hora do evento
+    });
+    if (changed || reminders.length !== before) { save(); render(); }
+  }
+  function renderCalSettings() {
+    const wrap = $('sCalWrap');
+    if (!NATIVE || !NATIVE.calendars) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    $('sCal').checked = !!settings.calOn;
+    $('sCalBody').hidden = !settings.calOn;
+    if (!settings.calOn) return;
+    let st = {};
+    try { st = JSON.parse(NATIVE.status()); } catch (e) {}
+    $('sCalPerm').hidden = !!st.calendar;
+    let cals = [];
+    if (st.calendar) { try { cals = JSON.parse(NATIVE.calendars() || '[]'); } catch (e) {} }
+    // primeira vez: escolhe os calendários principais das contas (os outros ficam à escolha)
+    if (settings.calIds == null && cals.length) { settings.calIds = cals.filter(c => c.name === c.account).map(c => c.id); saveSettings(); }
+    const ids = settings.calIds || [];
+    let html = '', acc = null;
+    cals.forEach(c => {
+      if (c.account !== acc) { acc = c.account; html += '<p class="cal-acc">' + esc(acc) + '</p>'; }
+      const nm = c.name === c.account ? L('Calendário principal', 'Main calendar') : c.name;
+      html += '<label class="cal-item"><input type="checkbox" data-cal="' + c.id + '"' + (ids.includes(c.id) ? ' checked' : '') + '>'
+        + '<i style="background:' + esc(c.color) + '"></i><span>' + esc(nm) + '</span></label>';
+    });
+    $('sCalList').innerHTML = html || (st.calendar ? '<p class="quiet-hint">' + L('Não encontrei calendários neste telemóvel.', 'No calendars found on this phone.') + '</p>' : '');
+    document.querySelectorAll('#sCalLeads input').forEach(i => { i.checked = (settings.calLeads || []).includes(i.dataset.lead); });
+    $('sCalHour').value = settings.calHour || '09:00';
+    $('sCalHourWrap').hidden = !(settings.calLeads || []).some(l => /d$/.test(l));
+  }
+  function readCalSettings() {
+    settings.calOn = $('sCal').checked;
+    const list = [...document.querySelectorAll('#sCalList input')];
+    if (list.length) settings.calIds = list.filter(i => i.checked).map(i => Number(i.dataset.cal));
+    settings.calLeads = [...document.querySelectorAll('#sCalLeads input:checked')].map(i => i.dataset.lead);
+    settings.calHour = $('sCalHour').value || '09:00';
+    saveSettings();
+    setTimeout(syncCalendar, 400); // o Android lê o calendário com as escolhas novas
+  }
+  if ($('sCalWrap')) {
+    $('sCal').addEventListener('change', () => {
+      settings.calOn = $('sCal').checked; saveSettings();
+      if (settings.calOn && NATIVE && NATIVE.requestCalendar) NATIVE.requestCalendar();
+      renderCalSettings(); setTimeout(syncCalendar, 400);
+    });
+    $('sCalGrant').addEventListener('click', () => NATIVE && NATIVE.requestCalendar && NATIVE.requestCalendar());
+    $('sCalBody').addEventListener('change', (e) => {
+      if (e.target.id === 'sCal') return;
+      readCalSettings();
+      $('sCalHourWrap').hidden = !(settings.calLeads || []).some(l => /d$/.test(l));
+    });
+  }
+
   function syncNative() {
     if (!NATIVE) return;
     clearTimeout(syncTimer);
@@ -1301,14 +1403,15 @@
       const now = Date.now();
       const events = [];
       reminders.filter(r => !r.done).forEach(r => {
-        pending(r).filter(e => e.at > now).slice(0, 60).forEach(e => events.push({
+        pending(r).filter(e => e.at > now && !(r.cal && e.kind !== 'snooze')).slice(0, 60).forEach(e => events.push({
           rid: r.id, at: e.at, kind: e.kind, task: r.text, end: r.end || 0, hasDeadline: !!r.hasDeadline,
           say: r.say ? withName(r.say) : '',
         }));
       });
       NATIVE.sync(JSON.stringify({
         events,
-        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode, lang: LANG, lockAlert: settings.lockAlert !== false },
+        settings: { name: settings.name, rate: settings.rate, repeat: settings.repeat, chime: settings.chime, alarmVolume: settings.alarmVolume, voiceName: settings.nativeVoice || '', momMode: !!settings.momMode, lang: LANG, lockAlert: settings.lockAlert !== false,
+          calOn: !!settings.calOn, calIds: settings.calIds || [], calLeads: settings.calLeads || [], calHour: hmToMin(settings.calHour || '09:00'), calDone: settings.calDone || [] },
       }));
     }, 200);
   }
@@ -1322,6 +1425,7 @@
       if (a.type === 'done') {
         if (r.recur) { r.lastAt = Math.max(r.lastAt || 0, a.at || Date.now()); r.snoozeAt = null; r.lastDoneAt = a.at || Date.now(); }
         else { r.done = true; r.doneAt = a.at || Date.now(); }
+        if (r.cal) calMarkDone(r);
       }
       else if (a.type === 'snooze') { r.snoozeAt = a.until; r.quietUntil = a.until; r.lastAt = Math.max(r.lastAt || 0, Date.now()); }
       alertRemove(r);
@@ -1398,7 +1502,7 @@
       },
       onSpoken() { checkNativeAlert(); },
       onActions() { applyNativeActions(); },
-      onResume() { applyNativeActions(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); updateWelcomePerms(); },
+      onResume() { applyNativeActions(); syncCalendar(); tick(); syncNative(); updateNativeNotice(); checkNativeAlert(); updateWelcomePerms(); if ($('settingsDlg').open) renderCalSettings(); },
       onSharedLink() { checkIncomingLink(); },
       onVoiceReady() { updateNativeNotice(); if (settings.nativeVoice) NATIVE.setVoice(settings.nativeVoice); },
       // botão "voltar" do Android: fecha o que estiver aberto; devolve false se não havia nada para fechar
@@ -1583,7 +1687,7 @@
     '. A app não tem contas, não tem publicidade e não envia os teus lembretes para lado nenhum.': ". The app has no accounts, no ads, and doesn't send your reminders anywhere.",
     'Quando falas para o microfone, o áudio é transformado em texto pelo serviço de voz do Android (normalmente da Google), como num ditado normal. A voz que lê os avisos também é a do Android.': "When you speak into the microphone, the audio is turned into text by Android's speech service (usually Google's), like normal dictation. The voice reading reminders is also Android's.",
     'Se desinstalares a app, os lembretes são apagados.': 'If you uninstall the app, your reminders are deleted.',
-    'Testar voz': 'Test voice', 'Olá! Eu sou o Mamly 💛': "Hi! I'm Mamly 💛", 'Dizes-me o que tens de fazer e eu lembro-te': 'Tell me what you need to do and I’ll remind you', 'em voz alta': 'out loud', ', à hora certa. E insisto até fazeres.': ', right on time. And I’ll keep at it until it’s done.', 'Como te chamas? (a voz chama-te pelo nome)': 'What’s your name? (the voice will call you by it)', 'Seguinte': 'Next', 'Fala comigo como falas com alguém': 'Talk to me like you’d talk to a friend', 'Toca no microfone e diz, por exemplo:': 'Tap the microphone and say, for example:', '«Daqui a 20 minutos tirar a roupa da máquina»': '“In 20 minutes take the laundry out”', '«Todos os dias às 9h tomar a medicação»': '“Every day at 9 take my meds”', '«De hora a hora até às 17h ir ao mecânico»': '“Every hour until 5pm go to the mechanic”', 'Quando o aviso tocar, podes responder': 'When a reminder rings, you can reply', '«feito»': '“done”', 'ou': 'or', '«adia 15 minutos»': '“snooze 15 minutes”', 'Para tocar com o ecrã desligado': 'To ring with the screen off', 'O Android precisa de algumas autorizações. Toca em cada uma, faz o que diz e volta aqui:': 'Android needs a few permissions. Tap each one, do what it says and come back:', 'Para veres os avisos. Toca em «Permitir».': 'So you can see reminders. Tap “Allow”.', 'Para tocar à hora certa. Liga «Permitir alarmes e lembretes».': 'So it rings on time. Turn on “Allow setting alarms and reminders”.', 'Para o Android não desligar o Mamly. Toca em «Utilização da bateria» (ou «Bateria») e escolhe «Sem restrições». Se aparecer «Permitir utilização em segundo plano», toca nessas palavras (não no botão) e escolhe «Sem restrições».': 'So Android doesn’t shut Mamly down. Tap “App battery usage” (or “Battery”) and choose “Unrestricted”. If you see “Allow background usage”, tap the words (not the switch) and choose “Unrestricted”.', 'Para falares os lembretes. Toca em «Permitir».': 'So you can speak your reminders. Tap “Allow”.', 'Notificações': 'Notifications', 'Alarmes e lembretes': 'Alarms & reminders', 'Funcionar em segundo plano': 'Run in the background', 'Microfone': 'Microphone', 'Começar': 'Start', 'Horas de silêncio': 'Quiet hours', 'Para uma pausa, diz ao microfone: «não me incomodes das 15h às 16h» ou «durante 1 hora».': 'For a break, tell the mic: “don’t disturb me from 3 to 4pm” or “for 1 hour”.', 'Não incomodar': 'Do not disturb', '· Não repetir avisos de noite': "· Don't repeat reminders at night", 'Das': 'From', 'Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.': 'Reminders set for a specific time (e.g. “at 7”, “every day at 9”) always ring.', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
+    'Testar voz': 'Test voice', 'Olá! Eu sou o Mamly 💛': "Hi! I'm Mamly 💛", 'Dizes-me o que tens de fazer e eu lembro-te': 'Tell me what you need to do and I’ll remind you', 'em voz alta': 'out loud', ', à hora certa. E insisto até fazeres.': ', right on time. And I’ll keep at it until it’s done.', 'Como te chamas? (a voz chama-te pelo nome)': 'What’s your name? (the voice will call you by it)', 'Seguinte': 'Next', 'Fala comigo como falas com alguém': 'Talk to me like you’d talk to a friend', 'Toca no microfone e diz, por exemplo:': 'Tap the microphone and say, for example:', '«Daqui a 20 minutos tirar a roupa da máquina»': '“In 20 minutes take the laundry out”', '«Todos os dias às 9h tomar a medicação»': '“Every day at 9 take my meds”', '«De hora a hora até às 17h ir ao mecânico»': '“Every hour until 5pm go to the mechanic”', 'Quando o aviso tocar, podes responder': 'When a reminder rings, you can reply', '«feito»': '“done”', 'ou': 'or', '«adia 15 minutos»': '“snooze 15 minutes”', 'Para tocar com o ecrã desligado': 'To ring with the screen off', 'O Android precisa de algumas autorizações. Toca em cada uma, faz o que diz e volta aqui:': 'Android needs a few permissions. Tap each one, do what it says and come back:', 'Para veres os avisos. Toca em «Permitir».': 'So you can see reminders. Tap “Allow”.', 'Para tocar à hora certa. Liga «Permitir alarmes e lembretes».': 'So it rings on time. Turn on “Allow setting alarms and reminders”.', 'Para o Android não desligar o Mamly. Toca em «Utilização da bateria» (ou «Bateria») e escolhe «Sem restrições». Se aparecer «Permitir utilização em segundo plano», toca nessas palavras (não no botão) e escolhe «Sem restrições».': 'So Android doesn’t shut Mamly down. Tap “App battery usage” (or “Battery”) and choose “Unrestricted”. If you see “Allow background usage”, tap the words (not the switch) and choose “Unrestricted”.', 'Para falares os lembretes. Toca em «Permitir».': 'So you can speak your reminders. Tap “Allow”.', 'Notificações': 'Notifications', 'Alarmes e lembretes': 'Alarms & reminders', 'Funcionar em segundo plano': 'Run in the background', 'Microfone': 'Microphone', 'Começar': 'Start', 'Horas de silêncio': 'Quiet hours', '📅 Calendário': '📅 Calendar', '· Avisar dos eventos do teu calendário': '· Remind me of my calendar events', 'Para ler os teus calendários, o Mamly precisa de autorização.': 'To read your calendars, Mamly needs permission.', 'Dar acesso': 'Allow access', 'Calendários a seguir': 'Calendars to follow', 'Avisar': 'Remind me', '3 dias antes': '3 days before', '2 dias antes': '2 days before', '1 dia antes': '1 day before', '1 hora antes': '1 hour before', 'Avisos de dias antes, às': 'Day-before reminders at', 'Só eventos com hora. O Mamly só lê o calendário: não muda nada e nada sai do telemóvel.': 'Only events with a time. Mamly only reads your calendar: it changes nothing and nothing leaves your phone.', 'Para uma pausa, diz ao microfone: «não me incomodes das 15h às 16h» ou «durante 1 hora».': 'For a break, tell the mic: “don’t disturb me from 3 to 4pm” or “for 1 hour”.', 'Não incomodar': 'Do not disturb', '· Não repetir avisos de noite': "· Don't repeat reminders at night", 'Das': 'From', 'Os avisos com hora marcada (ex.: «às 7h», «todos os dias às 9h») tocam sempre.': 'Reminders set for a specific time (e.g. “at 7”, “every day at 9”) always ring.', 'Com o ecrã bloqueado, mostrar o aviso por cima (como um despertador), para poderes responder por voz': 'When the screen is locked, show the reminder on top (like an alarm clock) so you can reply by voice', 'Responder por voz com o ecrã bloqueado': 'Reply by voice with the screen locked', 'Testar com ecrã desligado': 'Test with screen off',
     'Língua': 'Language', 'Automática (a do telemóvel)': 'Automatic (phone language)', 'Contacto:': 'Contact:', 'Segue-nos no Instagram': 'Follow us on Instagram', 'Apoiantes do Mamly': 'Mamly supporters', 'Este espaço pode ser teu': 'This space could be yours', 'Queres apoiar o projeto? Fala connosco.': 'Want to support the project? Get in touch.',
     // atributos
     'Impede o ecrã de desligar enquanto a página está aberta': 'Keeps the screen on while the page is open',
@@ -1630,6 +1734,7 @@
     updateNotifButton();
   } else {
     applyNativeActions();
+    syncCalendar();
     updateNativeNotice();
     checkNativeAlert();
   }

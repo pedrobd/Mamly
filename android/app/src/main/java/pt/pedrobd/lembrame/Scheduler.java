@@ -12,6 +12,7 @@ final class Scheduler {
     private Scheduler() {}
 
     static void scheduleNext(Context c) {
+        CalendarSync.refresh(c);
         JSONArray ev = Store.events(c);
         long next = Long.MAX_VALUE;
         for (int i = 0; i < ev.length(); i++) {
