@@ -320,6 +320,43 @@ But anything set for a specific time, like "every day at 7 take my meds", always
 #mamly #phda #adhd #sono #sleep #rotina #routine #lembretes #reminders
 ```
 
+### 12 · Para quem treina
+```
+Treinas? O Mamly conta por ti. 🏃‍♀️🚴‍♂️🏊
+
+Nos treinos longos é fácil esquecer o gel ou a água. Diz uma vez:
+🎙️ «De 20 em 20 minutos durante 2 horas comer um gel»
+
+E ele avisa-te em voz alta, mesmo com o telemóvel no bolso ou no braço:
+🔊 «Comer um gel. É a terceira vez, falta 1 hora.»
+
+Também dá para:
+🏃 «Às terças e quintas às 7h corrida»
+💧 «De 15 em 15 minutos durante 3 horas beber água»
+⏱️ «De 3 em 3 minutos durante meia hora troca o ritmo»
+🧘 «Todos os dias menos ao fim de semana às 21h alongar»
+
+Sem olhar para o ecrã. Só ouvir e continuar. 💛
+
+🇬🇧
+You train? Mamly keeps count. 🏃‍♀️🚴‍♂️🏊
+
+On long sessions it's easy to forget your gel or water. Say it once:
+🎙️ "Every 20 minutes for 2 hours take a gel"
+
+It reminds you out loud, even with your phone in your pocket or on your arm:
+🔊 "Take a gel. That's the third time, 1 hour to go."
+
+It also does:
+🏃 "Tuesdays and Thursdays at 7 run"
+💧 "Every 15 minutes for 3 hours drink water"
+⏱️ "Every 3 minutes for half an hour switch pace"
+
+No looking at the screen. Just listen and keep going. 💛
+
+#mamly #corrida #running #triatlo #triathlon #ciclismo #cycling #treino #training #phda #adhd
+```
+
 ---
 
 ## Ordem sugerida para publicar
@@ -335,6 +372,7 @@ Enquanto procuras testadores, publica primeiro o pedido de ajuda:
 9. **Post 10** (Datas)
 10. **Post 9** (Não me incomodes)
 11. **Post 11** (Modo noite)
+12. **Post 12** (Para quem treina; só depois de a versão nova estar na Play Store)
 
 Um por dia, ou de dois em dois dias. Quando a app estiver na Play Store, publica um post de lançamento (eu faço-o nessa altura) e troca o link da bio pelo da Play Store.
 

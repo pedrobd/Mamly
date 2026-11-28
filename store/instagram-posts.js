@@ -110,6 +110,16 @@ const posts = {
     <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">Das 23h às 8h, o Mamly não repete avisos. Escolhes tu o horário.</p>
     <p style="font-size:46px;line-height:1.35;margin:36px 0 0;max-width:880px">O despertador da medicação às 7h? <b style="color:${C.sun}">Esse toca sempre.</b></p>
     ${brand(C.cream)}</div>`,
+  '12-treino': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:100px">Treinas?<br><span style="color:${C.sun}">Ela conta por ti.</span> 🏃‍♀️</h1>
+    <div style="margin-top:56px;display:grid;gap:28px">
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end;max-width:860px;border-bottom-right-radius:12px">🎙️ «De 20 em 20 minutos durante 2 horas comer um gel.»</div>
+      <div class="bubble" style="background:${C.plum2};max-width:880px;border-bottom-left-radius:12px">🔊 «Pedro, comer um gel. É a terceira vez, falta 1 hora.»</div>
+    </div>
+    <div style="margin-top:44px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['🏃 Às terças e quintas às 7h corrida', '💧 De 15 em 15 min beber água', '⏱️ De 3 em 3 min troca o ritmo'].map(t => `<span style="font-size:31px;font-weight:700;padding:14px 22px;border-radius:999px;background:${C.plum2}">${t}</span>`).join('')}
+    </div>
+    ${brand(C.cream)}</div>`,
 };
 
 const postsEn = {
@@ -201,6 +211,16 @@ const postsEn = {
     <p style="font-size:46px;line-height:1.35;margin:70px 0 0;max-width:880px">From 11pm to 8am, Mamly doesn’t repeat reminders. You pick the hours.</p>
     <p style="font-size:46px;line-height:1.35;margin:36px 0 0;max-width:880px">Your 7am meds reminder? <b style="color:${C.sun}">That one always rings.</b></p>
     ${brand(C.cream)}</div>`,
+  '12-treino': `<div class="p" style="background:${C.plum};color:${C.cream}">
+    <h1 style="font-size:100px">You train?<br><span style="color:${C.sun}">She keeps count.</span> 🏃‍♀️</h1>
+    <div style="margin-top:56px;display:grid;gap:28px">
+      <div class="bubble" style="background:${C.coral};color:${C.plum};justify-self:end;max-width:860px;border-bottom-right-radius:12px">🎙️ “Every 20 minutes for 2 hours take a gel.”</div>
+      <div class="bubble" style="background:${C.plum2};max-width:880px;border-bottom-left-radius:12px">🔊 “Sam, take a gel. That’s the third time, 1 hour to go.”</div>
+    </div>
+    <div style="margin-top:44px;display:flex;flex-wrap:wrap;gap:14px">
+      ${['🏃 Tuesdays & Thursdays at 7 run', '💧 Every 15 min drink water', '⏱️ Every 3 min switch pace'].map(t => `<span style="font-size:31px;font-weight:700;padding:14px 22px;border-radius:999px;background:${C.plum2}">${t}</span>`).join('')}
+    </div>
+    ${brand(C.cream)}</div>`,
 };
 
 (async () => {
@@ -208,7 +228,7 @@ const postsEn = {
   const b = await chromium.launch();
   const all = [];
   for (const [name, html] of Object.entries(posts)) {
-    const dark = /^(3|7|9|11)-/.test(name);
+    const dark = /^(3|7|9|11|12)-/.test(name);
     all.push([name + '-pt', html.replace(/<\/div>$/, `<div class="swipe" style="color:${dark ? C.cream : C.plum}${name.startsWith('1-') ? ';top:100px;bottom:auto' : ''}">English →</div></div>`)]);
     all.push([name + '-en', postsEn[name]]);
   }
