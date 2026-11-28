@@ -404,6 +404,7 @@
     const list = (EN ? (settings.momMode ? MOM_PHRASES_EN : PHRASES_EN) : (settings.momMode ? MOM_PHRASES : PHRASES))[key];
     let out = list[Math.floor(Math.random() * list.length)];
     if (kind === 'snooze' && dl) out += L(' Tens até às {time}.', ' You have until {time}.');
+    if (kind === 'regular' && !dl) out += progressSuffix(progressInfo(r, now));
     return out
       .replace('{name}', momName())
       .replace('{who}', settings.name ? settings.name + ', ' : '')
@@ -412,6 +413,25 @@
       .replace(/\{time\}/g, r.end ? sayTime(r.end) : '')
       .replace('{Left}', r.end ? cap(sayDuration(r.end - now)) : '')
       .replace('{left}', r.end ? sayDuration(r.end - now) : '');
+  }
+  // «de 20 em 20 minutos durante 2 horas»: em que vez vai e quanto falta («É a terceira vez, falta 1 hora.»)
+  function progressInfo(r, at) {
+    if (r.once || r.recur || r.hasDeadline || !r.end || r.say) return null;
+    const ev = plan(r).filter(e => e.kind === 'regular');
+    if (ev.length < 2) return null;
+    let i = -1;
+    ev.forEach((e, k) => { if (e.at <= at + 60000) i = k; });
+    if (i < 0) return null;
+    return { nth: i + 1, last: i === ev.length - 1, left: Math.max(0, r.end - ev[i].at) };
+  }
+  const ORD_PT = ['primeira', 'segunda', 'terceira', 'quarta', 'quinta', 'sexta', 'sétima', 'oitava', 'nona', 'décima'];
+  const ORD_EN = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+  function progressSuffix(p) {
+    if (!p) return '';
+    if (p.last) return L(' É o último.', " That's the last one.");
+    const d = sayDuration(p.left), one = /^1 /.test(d) && !/ e | and /.test(d);
+    return EN ? " That's the " + (ORD_EN[p.nth - 1] || 'number ' + p.nth) + ' time, ' + d + ' to go.'
+              : ' É a ' + (ORD_PT[p.nth - 1] ? ORD_PT[p.nth - 1] + ' vez' : 'vez número ' + p.nth) + ', ' + (one ? 'falta ' : 'faltam ') + d + '.';
   }
   function confirmation(r) { return cap(rawConfirmation(r)); }
   function rawConfirmation(r) {
@@ -1673,10 +1693,13 @@
       const now = Date.now();
       const events = [];
       reminders.filter(r => !r.done).forEach(r => {
-        pending(r).filter(e => e.at > now && !(r.cal && e.kind !== 'snooze')).slice(0, 60).forEach(e => events.push({
-          rid: r.id, at: e.at, kind: e.kind, task: r.text, end: r.end || 0, hasDeadline: !!r.hasDeadline,
-          say: r.say ? withName(r.say) : '',
-        }));
+        pending(r).filter(e => e.at > now && !(r.cal && e.kind !== 'snooze')).slice(0, 60).forEach(e => {
+          const p = e.kind === 'regular' ? progressInfo(r, e.at) : null;
+          events.push({
+            rid: r.id, at: e.at, kind: e.kind, task: r.text, end: r.end || 0, hasDeadline: !!r.hasDeadline,
+            say: r.say ? withName(r.say) : '', nth: p ? p.nth : 0, last: !!(p && p.last), left: p ? p.left : 0,
+          });
+        });
       });
       NATIVE.sync(JSON.stringify({
         events,

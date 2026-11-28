@@ -48,6 +48,19 @@ final class Msg {
                 .replace("{time}", end > 0 ? time(end, en) : "")
                 .replace("{Left}", end > 0 ? capFirst(duration(end - now2, en)) : "")
                 .replace("{left}", end > 0 ? duration(end - now2, en) : "");
+        // «de 20 em 20 minutos durante 2 horas»: em que vez vai e quanto falta
+        int nth = e.optInt("nth", 0);
+        if (nth > 0 && "regular".equals(kind) && !dl) {
+            if (e.optBoolean("last", false)) out += en ? " That's the last one." : " É o último.";
+            else {
+                String d = duration(e.optLong("left", 0), en);
+                boolean one = d.startsWith("1 ") && !d.contains(" e ") && !d.contains(" and ");
+                String[] ordPt = {"primeira", "segunda", "terceira", "quarta", "quinta", "sexta", "sétima", "oitava", "nona", "décima"};
+                String[] ordEn = {"first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"};
+                out += en ? " That's the " + (nth <= 10 ? ordEn[nth - 1] : "number " + nth) + " time, " + d + " to go."
+                          : " É a " + (nth <= 10 ? ordPt[nth - 1] + " vez" : "vez número " + nth) + ", " + (one ? "falta " : "faltam ") + d + ".";
+            }
+        }
         return out.isEmpty() ? out : Character.toUpperCase(out.charAt(0)) + out.substring(1);
     }
 
